@@ -1,19 +1,21 @@
-# Equate Build 2
+# Equate Build 3
 
-Build 2 changes the core board to **one whole number per tile**.
+Build 3 incorporates live-play feedback:
 
-Key fixes:
-- Every equation uses exactly 3 selected number tiles.
-- Beginner starts with simple whole-number relationships.
-- Correct equations now register, score, display, and clear.
-- Cleared tiles stay white and empty.
-- Invalid selections show rejection feedback.
-- Blank spaces are ignored when checking future straight-line connections.
-- Tap and swipe are both supported.
-- Portrait/landscape responsiveness is retained.
-- 10 equations per stage, 10 points each, 80/100 to advance.
-- 10-minute timer with speed bonus.
-- Hint has no score penalty.
-- Two free undos, then -5 points each.
+- **Score is now highly visible** above the board while playing.
+- Matching-number assistance uses an **outline/frame only**; it no longer fills the whole tile.
+- Correctly selected tiles still use a full strong selection highlight.
+- Cleared tiles remain **plain white**.
+- Wrong or blocked selections **automatically clear** so the game cannot get stuck in a partial selection.
+- Tapping a selected tile again cancels the current selection.
+- Added real generated sound effects for:
+  - correct equation
+  - invalid selection
+  - hint
+  - perfect clear
+  - pause/resume
+  - final five timer seconds
+- Existing sound button now actually mutes/unmutes gameplay sounds.
+- Keeps whole-number-per-tile Build 2 rules and smooth portrait/landscape reflow.
 
-This build is specifically for testing whether whole-number tiles feel better than one-digit-per-tile play.
+Core rule remains: 3 whole-number tiles form each equation, and uncleared numbers block the path. Cleared white spaces are treated as removed for later straight-line connections.

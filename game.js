@@ -282,12 +282,31 @@ function canAppend(i){
   return {ok:true};
 }
 
+function clearSelectionSoon(delay=260){
+  setTimeout(()=>{
+    state.selected=[];
+    state.hintCells=[];
+    syncSelectionClasses();
+  },delay);
+}
+
 function addSelection(i){
+  // Tapping a selected tile again cancels the current attempt immediately.
+  if(state.selected.includes(i)){
+    state.selected=[];
+    state.hintCells=[];
+    syncSelectionClasses();
+    feedback("Selection cleared.","");
+    return;
+  }
+
   const result=canAppend(i);
   if(!result.ok){
     feedback(result.msg,"bad");
     vibrate("bad");
     flashRejected(i);
+    // Never leave the player trapped in a partial invalid path.
+    if(state.selected.length) clearSelectionSoon(220);
     return;
   }
 
@@ -302,10 +321,8 @@ function addSelection(i){
     }else{
       feedback("Not an equation — try again.","bad");
       vibrate("bad");
-      setTimeout(()=>{
-        state.selected=[];
-        syncSelectionClasses();
-      },320);
+      state.selected.forEach(flashRejected);
+      clearSelectionSoon(300);
     }
   }
 }
@@ -416,6 +433,7 @@ function useHint(){
   state.hintCells=hits[0].cells;
   syncSelectionClasses();
   feedback(`Hint: ${hits[0].eq.text}`,"warn");
+  vibrate("hint");
 }
 
 function undo(){
@@ -495,10 +513,10 @@ function syncSelectionClasses(){
 function flashRejected(i){
   const el=$(`#board .cell[data-i="${i}"]`);
   if(!el) return;
-  el.animate(
-    [{transform:"translateX(0)"},{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"translateX(0)"}],
-    {duration:180}
-  );
+  el.classList.remove("rejected");
+  void el.offsetWidth;
+  el.classList.add("rejected");
+  setTimeout(()=>el.classList.remove("rejected"),260);
 }
 
 function setCellSize(){
@@ -525,9 +543,52 @@ function feedback(text,type=""){
   el.className=`message ${type}`;
 }
 
+let audioCtx=null;
+
+function tone(freq,duration=0.08,type="sine",gain=0.045,delay=0){
+  if(!state.sound) return;
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const start=audioCtx.currentTime+delay;
+    const osc=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    osc.type=type;
+    osc.frequency.setValueAtTime(freq,start);
+    g.gain.setValueAtTime(0.0001,start);
+    g.gain.exponentialRampToValueAtTime(gain,start+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(start); osc.stop(start+duration+0.02);
+  }catch(e){}
+}
+
+function playSound(kind){
+  if(!state.sound) return;
+  if(kind==="good"){
+    tone(660,.07,"sine",.045,0);
+    tone(880,.09,"sine",.045,.07);
+  }else if(kind==="bad"){
+    tone(170,.10,"square",.025,0);
+  }else if(kind==="hint"){
+    tone(520,.06,"sine",.03,0);
+    tone(690,.07,"sine",.03,.06);
+  }else if(kind==="clear"){
+    tone(523,.08,"sine",.045,0);
+    tone(659,.08,"sine",.045,.07);
+    tone(784,.13,"sine",.05,.14);
+  }else if(kind==="pause"){
+    tone(330,.05,"sine",.025,0);
+  }else if(kind==="tick"){
+    tone(950,.035,"square",.018,0);
+  }
+}
+
 function vibrate(kind){
-  if(!state.sound || !navigator.vibrate) return;
-  navigator.vibrate(kind==="good" ? 35 : [20,25,20]);
+  playSound(kind);
+  if(!navigator.vibrate) return;
+  if(kind==="good") navigator.vibrate(35);
+  else if(kind==="bad") navigator.vibrate([20,25,20]);
+  else navigator.vibrate(18);
 }
 
 function renderTimer(){
@@ -556,6 +617,7 @@ function renderAll(){
   $("#stageLabel").textContent=state.stage;
   $("#modeLabel").textContent=`${LABEL[state.op]} · ${cap(state.difficulty)}`;
   $("#scoreLabel").textContent=state.baseScore;
+  $("#topScoreLabel").textContent=state.baseScore;
   $("#bestLabel").textContent=getBest();
   $("#foundLabel").textContent=state.found;
   $("#progressFill").style.width=`${Math.min(100,state.found*10)}%`;
@@ -570,6 +632,7 @@ function startTimer(){
     if(!state.stageActive || state.paused) return;
     state.secondsLeft=Math.max(0,state.secondsLeft-1);
     renderTimer();
+    if(state.secondsLeft>0 && state.secondsLeft<=5) playSound("tick");
     if(state.secondsLeft===0) finishStage(true);
     else if(state.secondsLeft%10===0) saveProgress();
   },1000);
@@ -591,6 +654,7 @@ function finishStage(timedOut){
 
   const passed=state.found>=8;
   const perfect=state.found>=10;
+  if(perfect) playSound("clear");
 
   $("#resultBadge").textContent=perfect?"PERFECT CLEAR":passed?"PASS":"REPLAY";
   $("#resultTitle").textContent=timedOut?"Time!":perfect?"Perfect Clear!":passed?"Stage Passed":"Keep Going";
@@ -657,11 +721,13 @@ function pause(){
   if(!state.stageActive) return;
   state.paused=true;
   $("#pauseOverlay").hidden=false;
+  playSound("pause");
 }
 
 function resume(){
   state.paused=false;
   $("#pauseOverlay").hidden=true;
+  playSound("pause");
 }
 
 /* Tap + swipe */

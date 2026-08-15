@@ -99,7 +99,17 @@ button.big{min-height:64px;border-radius:16px;border:1px solid var(--line);font-
 .progress-track,.timer-track{height:9px;border-radius:99px;background:#34295b;overflow:hidden;margin:10px 0 8px}
 .progress-track>div,.timer-track>div{height:100%;width:0;background:linear-gradient(90deg,#7b57e5,#c0a6ff);transition:width .25s}
 .center-panel{padding:12px;display:flex;flex-direction:column;min-width:0;min-height:0}
-.top-row{display:grid;grid-template-columns:auto minmax(180px,360px) auto;gap:12px;justify-content:space-between;align-items:center}
+.top-row{display:grid;grid-template-columns:auto minmax(110px,150px) minmax(190px,360px) auto;gap:10px;justify-content:center;align-items:center}
+
+.score-card{
+  min-width:120px;padding:8px 14px;border:1px solid rgba(255,255,255,.09);
+  border-radius:14px;background:linear-gradient(180deg,rgba(154,114,255,.22),rgba(255,255,255,.045));
+  text-align:center;box-shadow:0 0 24px rgba(154,114,255,.12)
+}
+.score-card span{display:block;font-size:11px;letter-spacing:.16em;font-weight:950;color:#d4c8ff}
+.score-card strong{font-size:30px;line-height:1}
+.score-card small{color:#aaa4c4;font-weight:800}
+
 .timer-card{
   justify-self:center;width:min(360px,45vw);padding:8px 14px;border:1px solid rgba(255,255,255,.08);
   border-radius:14px;background:rgba(255,255,255,.05);text-align:center
@@ -135,13 +145,9 @@ button.big{min-height:64px;border-radius:16px;border:1px solid var(--line);font-
   font-weight:900;font-size:calc(var(--cell)*.42);
   position:relative;
 }
-.cell.blank{background:#ffffff;color:transparent;pointer-events:none;box-shadow:none}
-.cell.selected{
-  z-index:2;background:#9a72ff;color:white;box-shadow:inset 0 0 0 3px rgba(255,255,255,.45),0 0 22px rgba(154,114,255,.8)
-}
-.cell.match-peer:not(.selected){
-  background:#e4dbff;box-shadow:inset 0 0 0 2px #9b7ae6
-}
+.cell.blank{background:#fff;color:transparent;pointer-events:none;box-shadow:none}
+.cell.selected{z-index:2;background:#8d66f2;color:white;box-shadow:inset 0 0 0 3px #fff,0 0 22px rgba(154,114,255,.75)}
+.cell.match-peer:not(.selected){background:var(--cell-bg);box-shadow:inset 0 0 0 3px #9b7ae6}
 .cell.hint{
   animation:hintPulse .8s ease-in-out 3;
   background:#fff1a9;
@@ -197,11 +203,26 @@ button.big{min-height:64px;border-radius:16px;border:1px solid var(--line);font-
   .control-btn{min-height:58px;border-radius:11px;display:flex;flex-direction:column;gap:0}
   .control-icon{font-size:20px}
   .control-btn small{font-size:10px}
-  .top-row{grid-template-columns:46px 1fr 46px}
+  .top-row{grid-template-columns:46px minmax(78px,105px) 1fr 46px}
   .timer-card{width:100%;padding:6px 10px}
   .timer-card strong{font-size:23px}
   .equation-toast{min-height:42px;margin:0;font-size:25px}
   .board-wrap{align-items:start}
   .message{padding:4px;font-size:13px}
   .setup-grid{grid-template-columns:1fr}
+}
+
+.board-wrap{scrollbar-color:#7254b7 transparent}
+.board{border-color:#7f61c5;background:#7f61c5}
+.center-panel{background:linear-gradient(180deg,rgba(24,17,54,.94),rgba(13,9,32,.96))}
+.rejected{animation:rejectFlash .24s ease}
+@keyframes rejectFlash{
+  0%,100%{filter:none}
+  45%{background:#ffd6db;box-shadow:inset 0 0 0 3px #ff6d7a}
+}
+
+@media (orientation:portrait), (max-width:760px){
+  .score-card{min-width:0;padding:6px 8px}
+  .score-card strong{font-size:23px}
+  .score-card small{font-size:10px}
 }
