@@ -1,182 +1,149 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <meta name="theme-color" content="#120d2f" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#07040d">
   <title>Equate</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main id="app">
-    <section id="home" class="screen active">
-      <div class="brand-wrap">
-        <div class="brand">EQUATE</div>
-        <div class="tagline">Find it. Solve it. Clear it.</div>
+<div id="app">
+  <section id="home" class="screen active home-screen">
+    <div class="home-card">
+      <h1 class="brand">EQUATE</h1>
+      <p class="tagline">Find it. Solve it. Clear it.</p>
+      <div class="home-actions">
+        <button id="startBtn" class="primary">Start</button>
+        <button id="resumeBtn" class="secondary" hidden>Resume</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="setup" class="screen setup-screen">
+    <div class="setup-card">
+      <button class="back-btn" data-back="home">‹ Back</button>
+      <h2>Choose Your Game</h2>
+
+      <h3>Operation</h3>
+      <div id="operationChoices" class="choice-grid">
+        <button class="choice" data-op="add">Addition</button>
+        <button class="choice" data-op="sub">Subtraction</button>
+        <button class="choice" data-op="mul">Multiplication</button>
+        <button class="choice" data-op="div">Division</button>
+        <button class="choice" data-op="mixed">Mixed</button>
       </div>
 
-      <div class="home-card">
-        <button class="primary big" id="startBtn">Start</button>
-        <button class="secondary big" id="levelBtn">Find My Level</button>
-        <button class="ghost big" id="resumeBtn" hidden>Resume</button>
+      <h3>Starting Point</h3>
+      <div id="difficultyChoices" class="choice-grid">
+        <button class="choice" data-diff="beginner">Beginner</button>
+        <button class="choice" data-diff="intermediate">Intermediate</button>
+        <button class="choice" data-diff="advanced">Advanced</button>
+        <button class="choice" data-diff="expert">Expert</button>
       </div>
-    </section>
 
-    <section id="setup" class="screen">
-      <header class="simple-header">
-        <button class="icon-btn" data-back="home">‹</button>
-        <h1>Choose Your Game</h1>
-        <span></span>
+      <button id="playBtn" class="primary play-btn" disabled>Play</button>
+    </div>
+  </section>
+
+  <section id="game" class="screen game-screen">
+    <div class="game-layout">
+      <header class="game-header">
+        <button id="exitBtn" class="header-button" aria-label="Exit">☰</button>
+
+        <div class="stage-box">
+          <div class="stage-main">STAGE <span id="stageLabel">1</span></div>
+          <div id="modeLabel" class="stage-sub">Addition · Beginner</div>
+        </div>
+
+        <div class="score-box">
+          <span>SCORE</span>
+          <strong id="runningScoreLabel">0</strong>
+        </div>
+
+        <div class="best-box">
+          <span>👑 BEST</span>
+          <strong id="bestLabel">0</strong>
+        </div>
+
+        <button id="soundBtn" class="header-button" aria-label="Sound">🔊</button>
       </header>
 
-      <div class="setup-grid">
-        <div class="setup-card">
-          <h2>Operation</h2>
-          <div class="choice-grid" id="operationChoices">
-            <button data-op="add">Addition</button>
-            <button data-op="sub">Subtraction</button>
-            <button data-op="mul">Multiplication</button>
-            <button data-op="div">Division</button>
-            <button data-op="mixed">Mixed</button>
-          </div>
+      <aside class="left-hud">
+        <div class="timer-title">TIME REMAINING</div>
+        <div id="timerRing" class="timer-ring">
+          <div class="timer-inner"><strong id="timerLabel">10:00</strong></div>
         </div>
 
-        <div class="setup-card">
-          <h2>Starting Point</h2>
-          <div class="choice-grid" id="difficultyChoices">
-            <button data-diff="beginner">Beginner</button>
-            <button data-diff="intermediate">Intermediate</button>
-            <button data-diff="advanced">Advanced</button>
-            <button data-diff="expert">Expert</button>
-          </div>
-          <p class="muted">You can move up or down later.</p>
+        <div class="goal-title">GOAL</div>
+        <div class="goal-copy">Find <strong>10 equations</strong><br>to complete the stage.</div>
+
+        <div class="progress-row">
+          <div class="progress-track"><div id="progressFill"></div></div>
+          <strong><span id="foundLabel">0</span>/10</strong>
         </div>
-      </div>
 
-      <button id="playBtn" class="primary bottom-cta" disabled>Play</button>
-    </section>
+        <div class="stage-grade">Stage grade: <strong><span id="scoreLabel">0</span>/100</strong></div>
 
-    <section id="game" class="screen game-screen">
-      <div class="arcade-shell">
-        <header class="arcade-header">
-          <button id="exitBtn" class="menu-square" aria-label="Exit">☰</button>
-          <div class="stage-head">
-            <strong>STAGE <span id="stageLabel">1</span></strong>
-            <small id="modeLabel">Addition · Beginner</small>
-          </div>
-          <div class="running-score">
-            <span>SCORE</span>
-            <strong id="topScoreLabel">0</strong>
-          </div>
-          <div class="best-score">
-            <span>👑 BEST</span>
-            <strong id="bestLabel">0</strong>
-          </div>
-          <button id="soundBtn" class="menu-square" aria-label="Toggle sound">🔊</button>
-        </header>
-
-        <aside class="left-panel">
-          <div class="timer-title">TIME REMAINING</div>
-          <div class="timer-ring" id="timerRing">
-            <div class="timer-ring-inner"><strong id="timerLabel">10:00</strong></div>
-          </div>
-          <div class="goal-label">GOAL</div>
-          <p>Find <strong>10 equations</strong><br>to clear the stage!</p>
-          <div class="goal-progress"><div id="progressFill"></div></div>
-          <strong class="goal-count"><span id="foundLabel">0</span> /10</strong>
-          <div class="rule-list">
-            <div>🔑 Numbers must connect.</div>
-            <div>◯ Cleared spaces don't block.</div>
-            <div>⛓ Stay in one direction.</div>
-          </div>
-          <div class="hidden-stage-score">Stage grade <span id="scoreLabel">0</span>/100</div>
-        </aside>
-
-        <main class="center-panel">
-          <div class="board-wrap" id="boardWrap">
-            <div id="board" class="board" aria-label="Equate number board"></div>
-          </div>
-          <div id="equationToast" class="equation-toast" aria-live="polite"></div>
-          <div id="message" class="message" aria-live="polite">Find an equation.</div>
-        </main>
-
-        <aside class="right-panel">
-          <button id="undoBtn" class="action-card undo"><span class="action-icon">↶</span><span>UNDO</span><small id="undoCost">2 free</small></button>
-          <button id="hintBtn" class="action-card hint"><span class="action-icon">💡</span><span>HINT</span><small>No penalty</small></button>
-          <button id="pauseBtn" class="action-card pause"><span class="action-icon">Ⅱ</span><span>PAUSE</span></button>
-          <button id="settingsBtn" class="action-card settings"><span class="action-icon">⚙</span><span>SETTINGS</span></button>
-        </aside>
-
-        <footer class="game-tip">⭐ Straight lines first. Diagonals and reverse unlock as difficulty increases.</footer>
-      </div>
-
-      <div id="pauseOverlay" class="overlay" hidden>
-        <div class="modal">
-          <p class="eyebrow">PAUSED</p>
-          <h2>Take your time.</h2>
-          <p>The stage timer is stopped.</p>
-          <button id="resumeGameBtn" class="primary">Resume</button>
+        <div class="rules">
+          <div>• Numbers must connect.</div>
+          <div>• Cleared white spaces don't block.</div>
+          <div>• One direction per equation.</div>
         </div>
-      </div>
+      </aside>
 
-      <div id="stageOverlay" class="overlay" hidden>
-        <div class="modal result-modal">
-          <p id="resultBadge" class="eyebrow">STAGE COMPLETE</p>
-          <h2 id="resultTitle">Nice work!</h2>
-          <div class="result-grid">
-            <div><span>Stage grade</span><strong id="resultBase">0</strong></div>
-            <div><span>Time bonus</span><strong id="resultBonus">+0</strong></div>
-            <div><span>Undo penalty</span><strong id="resultPenalty">0</strong></div>
-            <div><span>Stage points</span><strong id="resultTotal">0</strong></div>
-          </div>
+      <main class="play-area">
+        <div id="boardWrap" class="board-wrap">
+          <div id="board" class="board" aria-label="Equation board"></div>
+        </div>
+        <div id="equationToast" class="equation-toast" aria-live="polite"></div>
+        <div id="message" class="message" aria-live="polite">Find an equation.</div>
+      </main>
+
+      <aside class="right-controls">
+        <button id="undoBtn" class="control undo">
+          <span class="control-icon">↶</span><span>UNDO</span><small id="undoCost">2 free</small>
+        </button>
+        <button id="hintBtn" class="control hint">
+          <span class="control-icon">💡</span><span>HINT</span><small>No penalty</small>
+        </button>
+        <button id="pauseBtn" class="control pause">
+          <span class="control-icon">Ⅱ</span><span>PAUSE</span>
+        </button>
+        <button id="settingsBtn" class="control settings">
+          <span class="control-icon">⚙</span><span>SETTINGS</span>
+        </button>
+      </aside>
+
+      <footer class="tip">⭐ Straight lines first. Diagonals and reverse unlock as stages progress.</footer>
+    </div>
+
+    <div id="pauseOverlay" class="overlay" hidden>
+      <div class="modal">
+        <h2>Paused</h2>
+        <p>The board is hidden and the timer is stopped.</p>
+        <button id="resumeGameBtn" class="primary">Resume</button>
+      </div>
+    </div>
+
+    <div id="stageOverlay" class="overlay" hidden>
+      <div class="modal result-modal">
+        <div id="resultBadge" class="result-badge">PASS</div>
+        <h2 id="resultTitle">Stage Complete</h2>
+        <div class="result-grid">
+          <div><span>Stage Grade</span><strong id="resultBase">0</strong></div>
+          <div><span>Time Bonus</span><strong id="resultBonus">+0</strong></div>
+          <div><span>Undo Penalty</span><strong id="resultPenalty">0</strong></div>
+          <div><span>Stage Points</span><strong id="resultTotal">0</strong></div>
+        </div>
+        <div class="modal-actions">
+          <button id="replayBtn" class="secondary">New Puzzle</button>
           <button id="nextBtn" class="primary">Next Stage</button>
-          <button id="replayBtn" class="secondary">Replay Fresh Puzzle</button>
         </div>
       </div>
-    </section>
-
-        <aside class="right-panel controls-panel">
-          <button id="undoBtn" class="control-btn">
-            <span class="control-icon">↶</span>
-            <span>Undo</span>
-            <small id="undoCost">2 free</small>
-          </button>
-          <button id="hintBtn" class="control-btn">
-            <span class="control-icon">💡</span>
-            <span>Hint</span>
-            <small>No penalty</small>
-          </button>
-          <button id="pauseBtn" class="control-btn">
-            <span class="control-icon">Ⅱ</span>
-            <span>Pause</span>
-          </button>
-        </aside>
-      </div>
-
-      <div id="pauseOverlay" class="overlay" hidden>
-        <div class="modal">
-          <h2>Paused</h2>
-          <p>The board is hidden while the timer is stopped.</p>
-          <button id="resumeGameBtn" class="primary">Resume</button>
-        </div>
-      </div>
-
-      <div id="stageOverlay" class="overlay" hidden>
-        <div class="modal result-modal">
-          <div id="resultBadge" class="result-badge">PASS</div>
-          <h2 id="resultTitle">Stage Complete</h2>
-          <div class="result-score"><span id="resultBase">80</span><small>/100</small></div>
-          <div class="result-row"><span>Time Bonus</span><strong id="resultBonus">+0</strong></div>
-          <div class="result-row"><span>Undo Penalty</span><strong id="resultPenalty">0</strong></div>
-          <div class="result-row total"><span>Total Score</span><strong id="resultTotal">80</strong></div>
-          <div class="modal-actions">
-            <button id="replayBtn" class="secondary">New Puzzle</button>
-            <button id="nextBtn" class="primary">Next Stage</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-  <script src="game.js"></script>
+    </div>
+  </section>
+</div>
+<script src="game.js"></script>
 </body>
 </html>
