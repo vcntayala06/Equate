@@ -17,7 +17,7 @@ const state={
  op:null,difficulty:null,stage:1,rows:4,cols:4,board:[],
  selected:[],hintCells:[],found:0,baseScore:0,penalty:0,freeUndos:2,
  history:[],secondsLeft:600,timerId:null,paused:false,sound:true,stageActive:false,
- pointerDown:false,inputEnabled:true,runningScore:0,page:1
+ pointerDown:false,inputEnabled:true,runningScore:0,page:1,lastSolveAt:null,quickBonusPool:0
 };
 
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
@@ -32,8 +32,15 @@ function ops(){return state.op==="mixed"?["add","sub","mul","div"]:[state.op]}
 function rules(){
  const d=DIFF[state.difficulty], local=Math.max(1,state.stage-d.base+1);
  let size=d.size;
- if(state.difficulty==="beginner"){size=local<=2?4:local<=8?5:6}
- else size+=Math.floor((local-1)/10);
+ if(state.difficulty==="beginner"){
+   size = local<=2 ? 4 : local<=4 ? 5 : local<=8 ? 6 : 7;
+ } else if(state.difficulty==="intermediate"){
+   size = Math.max(6, d.size + Math.floor((local-1)/10));
+ } else if(state.difficulty==="advanced"){
+   size = Math.max(7, d.size + Math.floor((local-1)/10));
+ } else {
+   size = Math.max(9, d.size + Math.floor((local-1)/10));
+ }
  const diag=state.difficulty!=="beginner"||local>=5;
  const reverse=state.difficulty==="advanced"||state.difficulty==="expert"||local>=45;
  let max=d.max;
@@ -83,7 +90,12 @@ function newBoard(){
  for(let attempt=0;attempt<120;attempt++){
    const board=Array.from({length:state.rows*state.cols},(_,i)=>({id:i,value:null,blank:false}));
    const planted=[];
-   const target=state.rows<=4?4:state.rows===5?5:6;
+   const target =
+     state.rows<=4 ? 4 :
+     state.rows===5 ? 6 :
+     state.rows===6 ? 8 :
+     state.rows===7 ? 10 :
+     state.rows===8 ? 12 : 14;
    let safe=0;
    while(planted.length<target&&safe++<350){
      const opList=ops(),op=opList[rnd(0,opList.length-1)],eq=makeEquation(op,r.max),dirs=allowedDirs(),dirName=dirs[rnd(0,dirs.length-1)];
@@ -105,7 +117,8 @@ function newBoard(){
  renderBoard();
  state.pointerDown=false;
  state.inputEnabled=true;
- feedback("Find an equation.","");
+ if(state.lastSolveAt===null) state.lastSolveAt=performance.now();
+ 
  save();
 }
 
@@ -171,18 +184,42 @@ function selectTile(i){
    else{feedback("Not an equation — try again.","bad");sound("bad");state.selected.forEach(flash);clearSelection(240)}
  }
 }
+
+function quickFindBonus(){
+ const now=performance.now();
+ if(state.lastSolveAt===null){state.lastSolveAt=now;return 0}
+ const seconds=(now-state.lastSolveAt)/1000;
+ state.lastSolveAt=now;
+ if(seconds<=3)return 8;
+ if(seconds<=5)return 5;
+ if(seconds<=8)return 3;
+ return 0;
+}
+function showBonus(points){
+ if(!points)return;
+ const el=$("#bonusToast");
+ el.classList.remove("bonus-pop");
+ void el.offsetWidth;
+ el.textContent=points>=8?`⚡ LIGHTNING! +${points} BONUS`:points>=5?`⚡ QUICK! +${points} BONUS`:`FAST! +${points} BONUS`;
+ el.classList.add("bonus-pop");
+ clearTimeout(showBonus.t);
+ showBonus.t=setTimeout(()=>{el.textContent="";el.classList.remove("bonus-pop")},850);
+}
+
 function solve(eq){
  state.inputEnabled=false;
  state.history.push({cells:state.selected.map(i=>({i,value:state.board[i].value,blank:state.board[i].blank})),found:state.found,baseScore:state.baseScore});
  state.selected.forEach(i=>state.board[i].blank=true);
  state.found++;state.baseScore=Math.min(100,state.baseScore+10);
- showEquation(eq.text);feedback("Correct!","good");sound("good");
+ const qBonus=quickFindBonus();
+ if(qBonus){state.runningScore+=qBonus;state.quickBonusPool+=qBonus;showBonus(qBonus)}
+ showEquation(eq.text);sound("good");
  state.selected=[];state.hintCells=[];renderAll();save();
  if(state.found>=10){finish(false);return}
  setTimeout(()=>{
    if(enumerate(1).length===0){
      state.page++;
-     feedback("Board cleared.","good");
+     
      setTimeout(newBoard,350);
    }else{
      state.inputEnabled=true;syncClasses();
@@ -227,7 +264,7 @@ function enumerate(limit=10){
 function hint(){
  if(!state.stageActive||state.paused)return;
  const hits=enumerate(1);
- if(!hits.length){state.page++;feedback("Loading a new board…","warn");setTimeout(newBoard,300);return}
+ if(!hits.length){state.page++;setTimeout(newBoard,300);return}
  state.selected=[];state.hintCells=hits[0].cells;syncClasses();feedback(`Hint: ${hits[0].eq.text}`,"warn");sound("hint");
 }
 function undo(){
@@ -279,7 +316,7 @@ function renderTimer(){
  $("#timerRing").style.background=`conic-gradient(#5df02e 0 ${deg*.35}deg,#ffe126 ${deg*.35}deg ${deg*.63}deg,#ff7c16 ${deg*.63}deg ${deg*.82}deg,#ff4d55 ${deg*.82}deg ${deg}deg,#201825 ${deg}deg 360deg)`;
 }
 function showEquation(t){$("#equationToast").textContent=t+" ✓";clearTimeout(showEquation.t);showEquation.t=setTimeout(()=>$("#equationToast").textContent="",1300)}
-function feedback(t,type=""){const e=$("#message");e.textContent=t;e.className="message "+type}
+function feedback(t,type=""){ /* Build 7: no persistent gameplay message area */ }
 function flash(i){const e=$(`#board .cell[data-i="${i}"]`);if(!e)return;e.classList.remove("rejected");void e.offsetWidth;e.classList.add("rejected");setTimeout(()=>e.classList.remove("rejected"),260)}
 
 let audioCtx=null;
@@ -333,7 +370,7 @@ function finish(timedOut){
  $("#nextBtn").hidden=!passed;$("#stageOverlay").hidden=false;$("#runningScoreLabel").textContent=state.runningScore;
 }
 function startStage(){
- state.found=0;state.baseScore=0;state.penalty=0;state.freeUndos=2;state.history=[];state.secondsLeft=600;state.selected=[];state.hintCells=[];state.paused=false;state.stageActive=true;state.inputEnabled=true;state.page=1;
+ state.found=0;state.baseScore=0;state.penalty=0;state.freeUndos=2;state.history=[];state.secondsLeft=600;state.selected=[];state.hintCells=[];state.paused=false;state.stageActive=true;state.inputEnabled=true;state.page=1;state.lastSolveAt=performance.now();state.quickBonusPool=0;
  $("#stageOverlay").hidden=true;$("#pauseOverlay").hidden=true;show("game");newBoard();renderAll();startTimer();save();
 }
 function pause(){if(!state.stageActive)return;state.paused=true;state.pointerDown=false;$("#pauseOverlay").hidden=false;sound("pause")}
@@ -341,13 +378,13 @@ function resume(){state.paused=false;state.inputEnabled=true;$("#pauseOverlay").
 
 function save(){
  if(!state.stageActive)return;
- localStorage.setItem(SAVE,JSON.stringify({op:state.op,difficulty:state.difficulty,stage:state.stage,rows:state.rows,cols:state.cols,board:state.board,found:state.found,baseScore:state.baseScore,penalty:state.penalty,freeUndos:state.freeUndos,history:state.history,secondsLeft:state.secondsLeft,runningScore:state.runningScore,page:state.page}));
+ localStorage.setItem(SAVE,JSON.stringify({op:state.op,difficulty:state.difficulty,stage:state.stage,rows:state.rows,cols:state.cols,board:state.board,found:state.found,baseScore:state.baseScore,penalty:state.penalty,freeUndos:state.freeUndos,history:state.history,secondsLeft:state.secondsLeft,runningScore:state.runningScore,page:state.page,quickBonusPool:state.quickBonusPool}));
  $("#resumeBtn").hidden=false;
 }
 function clearSave(){localStorage.removeItem(SAVE);$("#resumeBtn").hidden=true}
 function restore(){
  const raw=localStorage.getItem(SAVE);if(!raw)return;Object.assign(state,JSON.parse(raw));
- state.selected=[];state.hintCells=[];state.paused=false;state.stageActive=true;state.inputEnabled=true;state.pointerDown=false;
+ state.selected=[];state.hintCells=[];state.paused=false;state.stageActive=true;state.inputEnabled=true;state.pointerDown=false;state.lastSolveAt=performance.now();
  show("game");renderAll();startTimer();
 }
 

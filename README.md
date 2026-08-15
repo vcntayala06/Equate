@@ -1,17 +1,18 @@
-# Equate Build 6
+# Equate Build 7
 
-Build 6 includes all live-play feedback collected after Build 5.
-
-## Changes
-- Added Full Screen control using the browser Fullscreen API.
-- Fixed right-side control label overflow, including Settings.
-- Added separate QUIT / SAVE control.
-  - Save & Quit
-  - Quit Without Saving (with confirmation)
-  - Cancel
-- EXIT is now separate from Quit / Save.
-- Removed page-number text from gameplay.
-- Expert boards now start at 9x9 minimum.
-- Removed automatic highlighting/outlining of other matching numbers during normal play.
-- Refactored Hint and manual selection to use the same `validateTriple()` function so a hinted equation cannot be rejected by the player validator.
-- Preserves one whole number per tile, exactly three tiles per equation, white cleared tiles, tap + swipe, undo, hints, timer, sounds, running score, best score, 80/100 advancement, and the Build 5 board-transition input fix.
+Changes from Build 6:
+- Removed the permanent bottom gameplay message/status line entirely.
+- Reclaimed that space for a larger board area.
+- Increased board sizes and equation density to reduce board/page transitions.
+  - Beginner grows to 6x6 and 7x7 sooner.
+  - Intermediate starts effectively at 6x6+.
+  - Advanced starts effectively at 7x7+.
+  - Expert remains 9x9 minimum.
+- Increased planted valid equations per board substantially.
+- Added quick-find bonus callouts near the board:
+  - FAST! +3
+  - QUICK! +5
+  - LIGHTNING! +8
+- Quick-find bonuses add to running/session score only and do not alter the 0–100 stage grade.
+- Stage completion time bonus remains separate.
+- Preserves all Build 6 fixes and gameplay rules.
