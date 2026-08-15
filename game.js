@@ -29,7 +29,7 @@ const state = {
   found:0, baseScore:0, penalty:0, freeUndos:2,
   history:[], secondsLeft:600, timerId:null,
   paused:false, sound:true, stageActive:false,
-  pointerDown:false
+  pointerDown:false, runningScore:0
 };
 
 const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
@@ -617,7 +617,7 @@ function renderAll(){
   $("#stageLabel").textContent=state.stage;
   $("#modeLabel").textContent=`${LABEL[state.op]} · ${cap(state.difficulty)}`;
   $("#scoreLabel").textContent=state.baseScore;
-  $("#topScoreLabel").textContent=state.baseScore;
+  $("#topScoreLabel").textContent=(state.runningScore||0)+state.baseScore;
   $("#bestLabel").textContent=getBest();
   $("#foundLabel").textContent=state.found;
   $("#progressFill").style.width=`${Math.min(100,state.found*10)}%`;
@@ -649,7 +649,8 @@ function finishStage(timedOut){
 
   const bonus=timeBonus();
   const total=Math.max(0,state.baseScore+bonus-state.penalty);
-  saveBest(total);
+  if(state.found>=8) state.runningScore=(state.runningScore||0)+total;
+  saveBest(state.runningScore||total);
   clearSavedGame();
 
   const passed=state.found>=8;
@@ -665,6 +666,7 @@ function finishStage(timedOut){
   $("#nextBtn").hidden=!passed;
   $("#stageOverlay").hidden=false;
   renderAll();
+  $("#topScoreLabel").textContent=state.runningScore||total;
 }
 
 function saveProgress(){
@@ -673,7 +675,8 @@ function saveProgress(){
     op:state.op,difficulty:state.difficulty,stage:state.stage,
     rows:state.rows,cols:state.cols,board:state.board,
     found:state.found,baseScore:state.baseScore,penalty:state.penalty,
-    freeUndos:state.freeUndos,history:state.history,secondsLeft:state.secondsLeft
+    freeUndos:state.freeUndos,history:state.history,secondsLeft:state.secondsLeft,
+    runningScore:state.runningScore||0
   }));
   $("#resumeBtn").hidden=false;
 }
@@ -778,10 +781,12 @@ $("#difficultyChoices").addEventListener("click",e=>{
 
 $("#playBtn").addEventListener("click",()=>{
   state.stage=DIFF[state.difficulty].base;
+  state.runningScore=0;
   startStage();
 });
 
 $("#hintBtn").addEventListener("click",useHint);
+$("#settingsBtn").addEventListener("click",()=>feedback("Settings are coming later — keeping this build focused.","warn"));
 $("#undoBtn").addEventListener("click",undo);
 $("#pauseBtn").addEventListener("click",pause);
 $("#resumeGameBtn").addEventListener("click",resume);

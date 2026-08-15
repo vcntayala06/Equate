@@ -56,63 +56,84 @@
       <button id="playBtn" class="primary bottom-cta" disabled>Play</button>
     </section>
 
-    <section id="game" class="screen">
-      <div class="game-shell">
-        <aside class="left-panel hud-panel">
-          <div class="stage-block">
-            <span class="eyebrow">STAGE</span>
-            <strong id="stageLabel">1</strong>
+    <section id="game" class="screen game-screen">
+      <div class="arcade-shell">
+        <header class="arcade-header">
+          <button id="exitBtn" class="menu-square" aria-label="Exit">☰</button>
+          <div class="stage-head">
+            <strong>STAGE <span id="stageLabel">1</span></strong>
             <small id="modeLabel">Addition · Beginner</small>
           </div>
-
-          <div class="hud-stat">
-            <span>Score</span>
-            <strong id="scoreLabel">0</strong>
-            <small>/ 100 base</small>
+          <div class="running-score">
+            <span>SCORE</span>
+            <strong id="topScoreLabel">0</strong>
           </div>
-
-          <div class="hud-stat">
-            <span>Best</span>
+          <div class="best-score">
+            <span>👑 BEST</span>
             <strong id="bestLabel">0</strong>
           </div>
+          <button id="soundBtn" class="menu-square" aria-label="Toggle sound">🔊</button>
+        </header>
 
-          <div class="progress-block">
-            <div class="progress-copy">
-              <span>Stage Progress</span>
-              <strong><span id="foundLabel">0</span>/10</strong>
-            </div>
-            <div class="progress-track"><div id="progressFill"></div></div>
-            <small>8/10 unlocks the next stage</small>
+        <aside class="left-panel">
+          <div class="timer-title">TIME REMAINING</div>
+          <div class="timer-ring" id="timerRing">
+            <div class="timer-ring-inner"><strong id="timerLabel">10:00</strong></div>
           </div>
+          <div class="goal-label">GOAL</div>
+          <p>Find <strong>10 equations</strong><br>to clear the stage!</p>
+          <div class="goal-progress"><div id="progressFill"></div></div>
+          <strong class="goal-count"><span id="foundLabel">0</span> /10</strong>
+          <div class="rule-list">
+            <div>🔑 Numbers must connect.</div>
+            <div>◯ Cleared spaces don't block.</div>
+            <div>⛓ Stay in one direction.</div>
+          </div>
+          <div class="hidden-stage-score">Stage grade <span id="scoreLabel">0</span>/100</div>
         </aside>
 
-        <section class="center-panel">
-          <div class="top-row">
-            <button id="exitBtn" class="small-btn">Exit</button>
-
-            <div class="score-card">
-              <span>SCORE</span>
-              <strong id="topScoreLabel">0</strong>
-              <small>/100</small>
-            </div>
-
-            <div class="timer-card">
-              <span>TIME</span>
-              <strong id="timerLabel">10:00</strong>
-              <div class="timer-track"><div id="timerFill"></div></div>
-            </div>
-
-            <button id="soundBtn" class="small-btn" aria-label="Toggle sound">🔊</button>
+        <main class="center-panel">
+          <div class="board-wrap" id="boardWrap">
+            <div id="board" class="board" aria-label="Equate number board"></div>
           </div>
-
           <div id="equationToast" class="equation-toast" aria-live="polite"></div>
+          <div id="message" class="message" aria-live="polite">Find an equation.</div>
+        </main>
 
-          <div id="boardWrap" class="board-wrap">
-            <div id="board" class="board" aria-label="Equation board"></div>
+        <aside class="right-panel">
+          <button id="undoBtn" class="action-card undo"><span class="action-icon">↶</span><span>UNDO</span><small id="undoCost">2 free</small></button>
+          <button id="hintBtn" class="action-card hint"><span class="action-icon">💡</span><span>HINT</span><small>No penalty</small></button>
+          <button id="pauseBtn" class="action-card pause"><span class="action-icon">Ⅱ</span><span>PAUSE</span></button>
+          <button id="settingsBtn" class="action-card settings"><span class="action-icon">⚙</span><span>SETTINGS</span></button>
+        </aside>
+
+        <footer class="game-tip">⭐ Straight lines first. Diagonals and reverse unlock as difficulty increases.</footer>
+      </div>
+
+      <div id="pauseOverlay" class="overlay" hidden>
+        <div class="modal">
+          <p class="eyebrow">PAUSED</p>
+          <h2>Take your time.</h2>
+          <p>The stage timer is stopped.</p>
+          <button id="resumeGameBtn" class="primary">Resume</button>
+        </div>
+      </div>
+
+      <div id="stageOverlay" class="overlay" hidden>
+        <div class="modal result-modal">
+          <p id="resultBadge" class="eyebrow">STAGE COMPLETE</p>
+          <h2 id="resultTitle">Nice work!</h2>
+          <div class="result-grid">
+            <div><span>Stage grade</span><strong id="resultBase">0</strong></div>
+            <div><span>Time bonus</span><strong id="resultBonus">+0</strong></div>
+            <div><span>Undo penalty</span><strong id="resultPenalty">0</strong></div>
+            <div><span>Stage points</span><strong id="resultTotal">0</strong></div>
           </div>
-
-          <div id="message" class="message" aria-live="polite">Find a straight equation.</div>
-        </section>
+          <button id="nextBtn" class="primary">Next Stage</button>
+          <button id="replayBtn" class="secondary">Replay Fresh Puzzle</button>
+        </div>
+      </div>
+    </section>
 
         <aside class="right-panel controls-panel">
           <button id="undoBtn" class="control-btn">

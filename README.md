@@ -1,21 +1,19 @@
-# Equate Build 3
+# Equate Build 4
 
-Build 3 incorporates live-play feedback:
+Visual target: the approved neon arcade mockup.
 
-- **Score is now highly visible** above the board while playing.
-- Matching-number assistance uses an **outline/frame only**; it no longer fills the whole tile.
-- Correctly selected tiles still use a full strong selection highlight.
-- Cleared tiles remain **plain white**.
-- Wrong or blocked selections **automatically clear** so the game cannot get stuck in a partial selection.
-- Tapping a selected tile again cancels the current selection.
-- Added real generated sound effects for:
-  - correct equation
-  - invalid selection
-  - hint
-  - perfect clear
-  - pause/resume
-  - final five timer seconds
-- Existing sound button now actually mutes/unmutes gameplay sounds.
-- Keeps whole-number-per-tile Build 2 rules and smooth portrait/landscape reflow.
-
-Core rule remains: 3 whole-number tiles form each equation, and uncleared numbers block the path. Cleared white spaces are treated as removed for later straight-line connections.
+Build 4:
+- Large running SCORE centered at the top.
+- BEST score at top right.
+- Stage and mode at top left.
+- Large visual timer and stage goal panel on the left.
+- Board is centered and dominant.
+- Undo, Hint, Pause, Settings stacked on the right.
+- Running score banks completed-stage points across the session.
+- Stage grade remains internally based on 10 equations × 10 points.
+- Whole-number-per-tile gameplay remains.
+- Cleared tiles remain white.
+- Matching-number help is outline-only.
+- Wrong selections automatically recover.
+- Build 3 sounds remain.
+- Responsive portrait layout reorganizes panels instead of losing controls.
