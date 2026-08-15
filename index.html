@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#120d2f" />
+  <title>Equate</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="app">
+    <section id="home" class="screen active">
+      <div class="brand-wrap">
+        <div class="brand">EQUATE</div>
+        <div class="tagline">Find it. Solve it. Clear it.</div>
+      </div>
+
+      <div class="home-card">
+        <button class="primary big" id="startBtn">Start</button>
+        <button class="secondary big" id="levelBtn">Find My Level</button>
+        <button class="ghost big" id="resumeBtn" hidden>Resume</button>
+      </div>
+    </section>
+
+    <section id="setup" class="screen">
+      <header class="simple-header">
+        <button class="icon-btn" data-back="home">‹</button>
+        <h1>Choose Your Game</h1>
+        <span></span>
+      </header>
+
+      <div class="setup-grid">
+        <div class="setup-card">
+          <h2>Operation</h2>
+          <div class="choice-grid" id="operationChoices">
+            <button data-op="add">Addition</button>
+            <button data-op="sub">Subtraction</button>
+            <button data-op="mul">Multiplication</button>
+            <button data-op="div">Division</button>
+            <button data-op="mixed">Mixed</button>
+          </div>
+        </div>
+
+        <div class="setup-card">
+          <h2>Starting Point</h2>
+          <div class="choice-grid" id="difficultyChoices">
+            <button data-diff="beginner">Beginner</button>
+            <button data-diff="intermediate">Intermediate</button>
+            <button data-diff="advanced">Advanced</button>
+            <button data-diff="expert">Expert</button>
+          </div>
+          <p class="muted">You can move up or down later.</p>
+        </div>
+      </div>
+
+      <button id="playBtn" class="primary bottom-cta" disabled>Play</button>
+    </section>
+
+    <section id="game" class="screen">
+      <div class="game-shell">
+        <aside class="left-panel hud-panel">
+          <div class="stage-block">
+            <span class="eyebrow">STAGE</span>
+            <strong id="stageLabel">1</strong>
+            <small id="modeLabel">Addition · Beginner</small>
+          </div>
+
+          <div class="hud-stat">
+            <span>Score</span>
+            <strong id="scoreLabel">0</strong>
+            <small>/ 100 base</small>
+          </div>
+
+          <div class="hud-stat">
+            <span>Best</span>
+            <strong id="bestLabel">0</strong>
+          </div>
+
+          <div class="progress-block">
+            <div class="progress-copy">
+              <span>Stage Progress</span>
+              <strong><span id="foundLabel">0</span>/10</strong>
+            </div>
+            <div class="progress-track"><div id="progressFill"></div></div>
+            <small>8/10 unlocks the next stage</small>
+          </div>
+        </aside>
+
+        <section class="center-panel">
+          <div class="top-row">
+            <button id="exitBtn" class="small-btn">Exit</button>
+            <div class="timer-card">
+              <span>TIME</span>
+              <strong id="timerLabel">10:00</strong>
+              <div class="timer-track"><div id="timerFill"></div></div>
+            </div>
+            <button id="soundBtn" class="small-btn" aria-label="Toggle sound">🔊</button>
+          </div>
+
+          <div id="equationToast" class="equation-toast" aria-live="polite"></div>
+
+          <div id="boardWrap" class="board-wrap">
+            <div id="board" class="board" aria-label="Equation board"></div>
+          </div>
+
+          <div id="message" class="message" aria-live="polite">Find a straight equation.</div>
+        </section>
+
+        <aside class="right-panel controls-panel">
+          <button id="undoBtn" class="control-btn">
+            <span class="control-icon">↶</span>
+            <span>Undo</span>
+            <small id="undoCost">2 free</small>
+          </button>
+          <button id="hintBtn" class="control-btn">
+            <span class="control-icon">💡</span>
+            <span>Hint</span>
+            <small>No penalty</small>
+          </button>
+          <button id="pauseBtn" class="control-btn">
+            <span class="control-icon">Ⅱ</span>
+            <span>Pause</span>
+          </button>
+        </aside>
+      </div>
+
+      <div id="pauseOverlay" class="overlay" hidden>
+        <div class="modal">
+          <h2>Paused</h2>
+          <p>The board is hidden while the timer is stopped.</p>
+          <button id="resumeGameBtn" class="primary">Resume</button>
+        </div>
+      </div>
+
+      <div id="stageOverlay" class="overlay" hidden>
+        <div class="modal result-modal">
+          <div id="resultBadge" class="result-badge">PASS</div>
+          <h2 id="resultTitle">Stage Complete</h2>
+          <div class="result-score"><span id="resultBase">80</span><small>/100</small></div>
+          <div class="result-row"><span>Time Bonus</span><strong id="resultBonus">+0</strong></div>
+          <div class="result-row"><span>Undo Penalty</span><strong id="resultPenalty">0</strong></div>
+          <div class="result-row total"><span>Total Score</span><strong id="resultTotal">80</strong></div>
+          <div class="modal-actions">
+            <button id="replayBtn" class="secondary">New Puzzle</button>
+            <button id="nextBtn" class="primary">Next Stage</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
