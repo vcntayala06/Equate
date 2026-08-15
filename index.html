@@ -49,7 +49,7 @@
   <section id="game" class="screen game-screen">
     <div class="game-layout">
       <header class="game-header">
-        <button id="exitBtn" class="header-button" aria-label="Exit">☰</button>
+        <button id="exitBtn" class="header-button compact" aria-label="Exit">EXIT</button>
 
         <div class="stage-box">
           <div class="stage-main">STAGE <span id="stageLabel">1</span></div>
@@ -66,7 +66,10 @@
           <strong id="bestLabel">0</strong>
         </div>
 
-        <button id="soundBtn" class="header-button" aria-label="Sound">🔊</button>
+        <div class="header-actions">
+          <button id="fullscreenBtn" class="header-button icon-only" aria-label="Full screen">⛶</button>
+          <button id="soundBtn" class="header-button icon-only" aria-label="Sound">🔊</button>
+        </div>
       </header>
 
       <aside class="left-hud">
@@ -110,6 +113,9 @@
         <button id="pauseBtn" class="control pause">
           <span class="control-icon">Ⅱ</span><span>PAUSE</span>
         </button>
+        <button id="quitSaveBtn" class="control quit-save">
+          <span class="control-icon">⏻</span><span>QUIT / SAVE</span>
+        </button>
         <button id="settingsBtn" class="control settings">
           <span class="control-icon">⚙</span><span>SETTINGS</span>
         </button>
@@ -123,6 +129,19 @@
         <h2>Paused</h2>
         <p>The board is hidden and the timer is stopped.</p>
         <button id="resumeGameBtn" class="primary">Resume</button>
+      </div>
+    </div>
+
+
+    <div id="quitSaveOverlay" class="overlay" hidden>
+      <div class="modal">
+        <h2>Quit / Save</h2>
+        <p>What would you like to do?</p>
+        <div class="quit-menu">
+          <button id="saveQuitBtn" class="primary">Save & Quit</button>
+          <button id="quitNoSaveBtn" class="danger">Quit Without Saving</button>
+          <button id="cancelQuitBtn" class="secondary">Cancel</button>
+        </div>
       </div>
     </div>
 

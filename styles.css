@@ -108,3 +108,48 @@ button{font:inherit;color:inherit}
   .play-area{padding:5px;grid-template-rows:minmax(0,1fr) 24px 20px}.equation-toast{font-size:16px}.message{font-size:11px}
   .tip{font-size:10px;padding:5px}
 }
+
+
+.header-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.header-button.compact{font-size:13px;font-weight:950;padding:0 8px;letter-spacing:.02em}
+.header-button.icon-only{font-size:23px}
+.control{min-width:0;overflow:hidden}
+.control span:not(.control-icon){min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.05}
+.control.settings,.control.quit-save{font-size:17px}
+.control.quit-save{border-color:#cf4d79;box-shadow:0 0 14px #cf4d7933}
+.quit-menu{display:grid;gap:10px;margin-top:18px}
+.danger{border-radius:14px;border:1px solid #b83d4d;padding:13px 18px;font-weight:900;background:#3a1119;color:#fff}
+
+@media (orientation:landscape){
+  .game-screen{overflow:hidden}
+  .game-layout{height:100dvh;max-height:100dvh}
+  .play-area,.left-hud,.right-controls{min-height:0}
+}
+
+@media (max-width:1100px) and (orientation:landscape){
+  .game-layout{
+    grid-template-columns:205px minmax(0,1fr) 175px;
+    grid-template-rows:76px minmax(0,1fr) 28px;
+    gap:7px;padding:7px;
+  }
+  .game-header{grid-template-columns:62px 210px minmax(220px,1fr) 215px 108px;gap:7px}
+  .stage-main{font-size:24px}.stage-sub{font-size:11px}
+  .score-box strong{font-size:42px}.best-box strong{font-size:28px}
+  .timer-ring{width:min(145px,72%)}
+  .timer-inner strong{font-size:31px}
+  .left-hud{padding:10px}
+  .right-controls{padding:8px;gap:8px}
+  .control{flex:1 1 0;min-height:58px;font-size:16px;padding:6px 8px;grid-template-columns:38px 1fr}
+  .control-icon{font-size:29px}
+  .control.settings,.control.quit-save{font-size:13px}
+  .tip{font-size:11px}
+}
+
+@media (orientation:portrait), (max-width:800px){
+  .game-header{grid-template-columns:46px 1fr 1.1fr 1fr 72px}
+  .header-actions{gap:3px}
+  .header-button.compact{font-size:9px;padding:0 2px}
+  .header-button.icon-only{font-size:17px}
+  .right-controls{overflow:hidden}
+  .control.settings,.control.quit-save{font-size:9px}
+}

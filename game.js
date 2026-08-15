@@ -10,7 +10,7 @@ const DIFF={
  beginner:{base:1,size:4,max:9},
  intermediate:{base:41,size:5,max:30},
  advanced:{base:81,size:6,max:99},
- expert:{base:121,size:7,max:250}
+ expert:{base:121,size:9,max:250}
 };
 
 const state={
@@ -103,8 +103,9 @@ function newBoard(){
  state.board=chosen.board;
  for(const cell of state.board)if(cell.value===null)cell.value=state.difficulty==="beginner"?rnd(0,r.max):rnd(0,Math.max(12,r.max));
  renderBoard();
+ state.pointerDown=false;
  state.inputEnabled=true;
- feedback(`Page ${state.page} — find an equation.`,"");
+ feedback("Find an equation.","");
  save();
 }
 
@@ -137,12 +138,24 @@ function canAppend(i){
  }
  return {ok:true};
 }
-function currentEquation(){
- if(state.selected.length!==3)return null;
- const [a,b,c]=state.selected.map(i=>state.board[i].value);
- for(const op of ops())if(equationValid(a,b,c,op))return {a,b,c,op,text:`${a} ${SYMBOL[op]} ${b} = ${c}`};
+function validateTriple(cells){
+ if(!Array.isArray(cells)||cells.length!==3)return null;
+
+ const d1=rayConnect(cells[0],cells[1]);
+ const d2=rayConnect(cells[1],cells[2]);
+ if(!d1||!d2)return null;
+ if(d1.dr!==d2.dr||d1.dc!==d2.dc)return null;
+ if(!directionAllowed(d1))return null;
+
+ const [a,b,c]=cells.map(i=>state.board[i].value);
+ for(const op of ops()){
+   if(equationValid(a,b,c,op)){
+     return {cells:[...cells],a,b,c,op,text:`${a} ${SYMBOL[op]} ${b} = ${c}`};
+   }
+ }
  return null;
 }
+function currentEquation(){return validateTriple(state.selected)}
 function clearSelection(delay=0){
  setTimeout(()=>{state.selected=[];state.hintCells=[];syncClasses()},delay);
 }
@@ -169,7 +182,7 @@ function solve(eq){
  setTimeout(()=>{
    if(enumerate(1).length===0){
      state.page++;
-     feedback("Next page…","good");
+     feedback("Board cleared.","good");
      setTimeout(newBoard,350);
    }else{
      state.inputEnabled=true;syncClasses();
@@ -181,17 +194,30 @@ function enumerate(limit=10){
  for(let i=0;i<state.board.length;i++){
    if(state.board[i].blank)continue;
    const [sr,sc]=coord(i);
+
    for(const name of dirs){
      const [dr,dc]=DIRS[name];
+
      let r=sr+dr,c=sc+dc,second=null;
-     while(inBounds(r,c)){const j=idx(r,c);if(!state.board[j].blank){second=j;break}r+=dr;c+=dc}
+     while(inBounds(r,c)){
+       const j=idx(r,c);
+       if(!state.board[j].blank){second=j;break}
+       r+=dr;c+=dc;
+     }
      if(second===null)continue;
-     r+=dr;c+=dc;let third=null;
-     while(inBounds(r,c)){const j=idx(r,c);if(!state.board[j].blank){third=j;break}r+=dr;c+=dc}
+
+     r+=dr;c+=dc;
+     let third=null;
+     while(inBounds(r,c)){
+       const j=idx(r,c);
+       if(!state.board[j].blank){third=j;break}
+       r+=dr;c+=dc;
+     }
      if(third===null)continue;
-     const [a,b,cval]=[i,second,third].map(x=>state.board[x].value);
-     for(const op of ops())if(equationValid(a,b,cval,op)){
-       hits.push({cells:[i,second,third],eq:{text:`${a} ${SYMBOL[op]} ${b} = ${cval}`}});
+
+     const valid=validateTriple([i,second,third]);
+     if(valid){
+       hits.push({cells:[i,second,third],eq:valid});
        if(hits.length>=limit)return hits;
      }
    }
@@ -201,7 +227,7 @@ function enumerate(limit=10){
 function hint(){
  if(!state.stageActive||state.paused)return;
  const hits=enumerate(1);
- if(!hits.length){state.page++;feedback("New page…","warn");setTimeout(newBoard,300);return}
+ if(!hits.length){state.page++;feedback("Loading a new board…","warn");setTimeout(newBoard,300);return}
  state.selected=[];state.hintCells=hits[0].cells;syncClasses();feedback(`Hint: ${hits[0].eq.text}`,"warn");sound("hint");
 }
 function undo(){
@@ -231,10 +257,6 @@ function syncClasses(){
    el.classList.toggle("hint",state.hintCells.includes(i));
    el.classList.remove("match-peer");
  });
- if(state.selected.length&&state.difficulty==="beginner"&&rules().local<=6){
-   const v=state.board[state.selected[0]].value;
-   $$("#board .cell").forEach((el,i)=>{if(!state.board[i].blank&&state.board[i].value===v&&!state.selected.includes(i))el.classList.add("match-peer")});
- }
 }
 function fitBoard(){
  const wrap=$("#boardWrap");if(!wrap||!state.cols)return;
@@ -274,6 +296,22 @@ function sound(k){
  else if(k==="pause")tone(330,.04,"sine",.02);
  if(navigator.vibrate)navigator.vibrate(k==="bad"?[18,20,18]:22);
 }
+
+async function toggleFullscreen(){
+ try{
+   if(!document.fullscreenElement){
+     if(document.documentElement.requestFullscreen){
+       await document.documentElement.requestFullscreen();
+     }
+   }else if(document.exitFullscreen){
+     await document.exitFullscreen();
+   }
+ }catch(e){
+   feedback("Full screen isn't available in this browser.","warn");
+ }
+ setTimeout(fitBoard,120);
+}
+
 function startTimer(){
  clearInterval(state.timerId);state.timerId=setInterval(()=>{
    if(!state.stageActive||state.paused)return;
@@ -335,9 +373,45 @@ $("#difficultyChoices").onclick=e=>{const b=e.target.closest("[data-diff]");if(!
 $("#playBtn").onclick=()=>{state.stage=DIFF[state.difficulty].base;state.runningScore=0;startStage()};
 $("#hintBtn").onclick=hint;$("#undoBtn").onclick=undo;$("#pauseBtn").onclick=pause;$("#resumeGameBtn").onclick=resume;
 $("#settingsBtn").onclick=()=>feedback("Settings will stay simple — sound is available at the top.","warn");
-$("#exitBtn").onclick=()=>{save();clearInterval(state.timerId);state.stageActive=false;show("home")};
+$("#exitBtn").onclick=()=>{
+  clearInterval(state.timerId);
+  state.pointerDown=false;
+  state.stageActive=false;
+  show("home");
+};
+$("#quitSaveBtn").onclick=()=>{
+  if(!state.stageActive)return;
+  state.paused=true;
+  state.pointerDown=false;
+  $("#quitSaveOverlay").hidden=false;
+};
+$("#cancelQuitBtn").onclick=()=>{
+  state.paused=false;
+  state.inputEnabled=true;
+  $("#quitSaveOverlay").hidden=true;
+};
+$("#saveQuitBtn").onclick=()=>{
+  save();
+  clearInterval(state.timerId);
+  state.pointerDown=false;
+  state.stageActive=false;
+  state.paused=false;
+  $("#quitSaveOverlay").hidden=true;
+  show("home");
+};
+$("#quitNoSaveBtn").onclick=()=>{
+  if(!confirm("Quit this game without saving?"))return;
+  clearSave();
+  clearInterval(state.timerId);
+  state.pointerDown=false;
+  state.stageActive=false;
+  state.paused=false;
+  $("#quitSaveOverlay").hidden=true;
+  show("home");
+};
 $("#replayBtn").onclick=()=>startStage();
 $("#nextBtn").onclick=()=>{state.stage++;startStage()};
+$("#fullscreenBtn").onclick=toggleFullscreen;
 $("#soundBtn").onclick=()=>{state.sound=!state.sound;$("#soundBtn").textContent=state.sound?"🔊":"🔇"};
 $("#resumeBtn").onclick=restore;
 window.addEventListener("resize",()=>requestAnimationFrame(fitBoard));window.addEventListener("orientationchange",()=>setTimeout(fitBoard,120));

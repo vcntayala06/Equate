@@ -1,30 +1,17 @@
-# Equate Build 5
+# Equate Build 6
 
-Build 5 is a clean rebuild of the gameplay screen and board-transition input path.
+Build 6 includes all live-play feedback collected after Build 5.
 
-## Main fixes
-- Landscape gameplay is designed to fit in one viewport with no page scrolling.
-- Visual structure follows the approved reference:
-  - stage top left
-  - large running score top center
-  - best score top right
-  - circular timer/goal left
-  - centered board
-  - Undo/Hint/Pause/Settings right
-- Page/board transitions explicitly re-enable input.
-- Input listeners are delegated to the permanent board element, so tap/swipe continues working on page 2, page 3, etc.
-- Pointer state is reset during page transitions, pause, blur, and new stages.
-
-## Preserved rules
-- One whole number per tile.
-- Exactly three selected tiles per equation.
-- Cleared tiles stay white.
-- Matching-number assistance is outline-only.
-- Invalid attempts automatically clear.
-- Cleared white spaces do not block later straight-line connections.
-- 10 equations per stage; 10 base points each; 80/100 advances.
-- 10-minute timer with time bonus.
-- Hint has no point penalty.
-- Two free undos, then -5 points each.
-- Sound effects and mute button.
-- Running session score and best score.
+## Changes
+- Added Full Screen control using the browser Fullscreen API.
+- Fixed right-side control label overflow, including Settings.
+- Added separate QUIT / SAVE control.
+  - Save & Quit
+  - Quit Without Saving (with confirmation)
+  - Cancel
+- EXIT is now separate from Quit / Save.
+- Removed page-number text from gameplay.
+- Expert boards now start at 9x9 minimum.
+- Removed automatic highlighting/outlining of other matching numbers during normal play.
+- Refactored Hint and manual selection to use the same `validateTriple()` function so a hinted equation cannot be rejected by the player validator.
+- Preserves one whole number per tile, exactly three tiles per equation, white cleared tiles, tap + swipe, undo, hints, timer, sounds, running score, best score, 80/100 advancement, and the Build 5 board-transition input fix.
