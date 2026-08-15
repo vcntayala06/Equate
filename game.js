@@ -7,7 +7,7 @@ const SYMBOL={add:"+",sub:"−",mul:"×",div:"÷"};
 const LABEL={add:"Addition",sub:"Subtraction",mul:"Multiplication",div:"Division",mixed:"Mixed"};
 const DIRS={right:[0,1],down:[1,0],dr:[1,1],dl:[1,-1],left:[0,-1],up:[-1,0],ur:[-1,1],ul:[-1,-1]};
 const DIFF={
- beginner:{base:1,size:4,max:9},
+ beginner:{base:1,size:5,max:9},
  intermediate:{base:41,size:5,max:30},
  advanced:{base:81,size:6,max:99},
  expert:{base:121,size:9,max:250}
@@ -33,7 +33,7 @@ function rules(){
  const d=DIFF[state.difficulty], local=Math.max(1,state.stage-d.base+1);
  let size=d.size;
  if(state.difficulty==="beginner"){
-   size = local<=2 ? 4 : local<=4 ? 5 : local<=8 ? 6 : 7;
+   size = 5;
  } else if(state.difficulty==="intermediate"){
    size = Math.max(6, d.size + Math.floor((local-1)/10));
  } else if(state.difficulty==="advanced"){
@@ -403,19 +403,77 @@ $("#board").addEventListener("pointermove",e=>{
 function endPointer(){state.pointerDown=false}
 window.addEventListener("pointerup",endPointer);window.addEventListener("pointercancel",endPointer);window.addEventListener("blur",endPointer);
 
-$("#startBtn").onclick=()=>show("setup");
+
+const TUTORIAL_KEY="equate-tutorial-seen-v1";
+let tutorialTimers=[];
+
+const tutorialValues=[
+  4,3,7,12,5,
+  9,2,11,8,6,
+  5,10,15,7,14,
+  3,6,9,4,2,
+  8,4,12,16,8
+];
+const tutorialExamples=[
+  {cells:[0,1,2],eq:"4 + 3 = 7",rule:"Three numbers in one straight line can make an equation."},
+  {cells:[4,9,14],eq:"5 + 6 = 11",values:[5,6,11],rule:"Equations can run vertically too."},
+  {cells:[20,22,24],eq:"8 + 4 = 12",values:[8,4,12],rule:"Cleared white spaces do not block a later straight-line equation."}
+];
+
+function clearTutorialTimers(){tutorialTimers.forEach(clearTimeout);tutorialTimers=[]}
+function buildTutorialBoard(){
+ const b=$("#tutorialBoard");b.innerHTML="";
+ tutorialValues.forEach((v,i)=>{const d=document.createElement("div");d.className="tcell";d.dataset.i=i;d.textContent=v;b.appendChild(d)});
+}
+function tutorialCells(cells,cls,on=true){cells.forEach(i=>{const e=$(`#tutorialBoard .tcell[data-i="${i}"]`);if(e)e.classList.toggle(cls,on)})}
+function setTutorialValues(ex){
+ if(!ex.values)return;
+ ex.cells.forEach((i,k)=>{const e=$(`#tutorialBoard .tcell[data-i="${i}"]`);if(e)e.textContent=ex.values[k]});
+}
+function runTutorial(){
+ clearTutorialTimers();buildTutorialBoard();
+ $("#tutorialReady").hidden=true;$("#tutorialEquation").textContent="";
+ $("#tutorialStep").textContent="Watch the highlighted numbers.";
+ $("#tutorialRule").textContent="Pick 3 numbers in one straight line that make a true equation.";
+ let offset=350;
+ tutorialExamples.forEach((ex,n)=>{
+   tutorialTimers.push(setTimeout(()=>{
+     setTutorialValues(ex);
+     $("#tutorialStep").textContent=`Example ${n+1} of 3`;
+     $("#tutorialRule").textContent=ex.rule;
+     tutorialCells(ex.cells,"demo",true);
+   },offset));
+   tutorialTimers.push(setTimeout(()=>{
+     $("#tutorialEquation").textContent=ex.eq+" ✓";
+   },offset+700));
+   tutorialTimers.push(setTimeout(()=>{
+     tutorialCells(ex.cells,"demo",false);
+     tutorialCells(ex.cells,"cleared",true);
+   },offset+1500));
+   offset+=2300;
+ });
+ tutorialTimers.push(setTimeout(()=>{
+   $("#tutorialStep").textContent="That's it.";
+   $("#tutorialEquation").textContent="";
+   $("#tutorialRule").textContent="Find equations. Clear tiles. Score points.";
+   $("#tutorialReady").hidden=false;
+ },offset+150));
+}
+function openTutorial(){
+ show("tutorial");runTutorial();
+}
+function beginAfterTutorial(){
+ clearTutorialTimers();
+ localStorage.setItem(TUTORIAL_KEY,"1");
+ show("setup");
+}
+
+$("#startBtn").onclick=()=>localStorage.getItem(TUTORIAL_KEY)?show("setup"):openTutorial();
 $$("[data-back]").forEach(b=>b.onclick=()=>show(b.dataset.back));
 $("#operationChoices").onclick=e=>{const b=e.target.closest("[data-op]");if(!b)return;state.op=b.dataset.op;$$("#operationChoices .choice").forEach(x=>x.classList.toggle("selected",x===b));$("#playBtn").disabled=!(state.op&&state.difficulty)};
 $("#difficultyChoices").onclick=e=>{const b=e.target.closest("[data-diff]");if(!b)return;state.difficulty=b.dataset.diff;$$("#difficultyChoices .choice").forEach(x=>x.classList.toggle("selected",x===b));$("#playBtn").disabled=!(state.op&&state.difficulty)};
 $("#playBtn").onclick=()=>{state.stage=DIFF[state.difficulty].base;state.runningScore=0;startStage()};
 $("#hintBtn").onclick=hint;$("#undoBtn").onclick=undo;$("#pauseBtn").onclick=pause;$("#resumeGameBtn").onclick=resume;
-$("#settingsBtn").onclick=()=>feedback("Settings will stay simple — sound is available at the top.","warn");
-$("#exitBtn").onclick=()=>{
-  clearInterval(state.timerId);
-  state.pointerDown=false;
-  state.stageActive=false;
-  show("home");
-};
 $("#quitSaveBtn").onclick=()=>{
   if(!state.stageActive)return;
   state.paused=true;
@@ -449,8 +507,16 @@ $("#quitNoSaveBtn").onclick=()=>{
 $("#replayBtn").onclick=()=>startStage();
 $("#nextBtn").onclick=()=>{state.stage++;startStage()};
 $("#fullscreenBtn").onclick=toggleFullscreen;
-$("#soundBtn").onclick=()=>{state.sound=!state.sound;$("#soundBtn").textContent=state.sound?"🔊":"🔇"};
+$("#soundBtn").onclick=()=>{
+  state.sound=!state.sound;
+  const icon=$("#soundBtn .control-icon");
+  if(icon)icon.textContent=state.sound?"🔊":"🔇";
+};
 $("#resumeBtn").onclick=restore;
+$("#howToBtn").onclick=openTutorial;
+$("#skipTutorialBtn").onclick=beginAfterTutorial;
+$("#tutorialPlayBtn").onclick=beginAfterTutorial;
+$("#replayTutorialBtn").onclick=runTutorial;
 window.addEventListener("resize",()=>requestAnimationFrame(fitBoard));window.addEventListener("orientationchange",()=>setTimeout(fitBoard,120));
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&state.stageActive&&!state.paused)pause()});
 $("#resumeBtn").hidden=!localStorage.getItem(SAVE);

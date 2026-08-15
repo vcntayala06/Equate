@@ -173,3 +173,20 @@ button{font:inherit;color:inherit}
   .play-area{grid-template-rows:minmax(0,1fr) 22px 20px}
   .bonus-toast{font-size:14px}
 }
+
+/* Build 8 */
+.game-header{grid-template-columns:250px minmax(260px,1fr) 270px 74px}
+.control.sound-control{border-color:#58a7ff;box-shadow:0 0 14px #348cff38}
+.tutorial-screen.active{display:grid;place-items:center;padding:14px}
+.tutorial-shell{width:min(1080px,96vw);height:min(720px,96dvh);display:grid;grid-template-rows:auto 1fr auto;gap:12px;padding:20px;border:1px solid #69379c;border-radius:24px;background:linear-gradient(180deg,#120b21,#08050f);box-shadow:0 0 40px #8f37db35}
+.tutorial-head{display:flex;justify-content:space-between;align-items:center}.tutorial-head h2{margin:3px 0;font-size:30px}.tutorial-kicker{color:#62ef31;font-weight:950;letter-spacing:.12em}
+.tutorial-body{display:grid;grid-template-columns:minmax(360px,1fr) minmax(280px,.7fr);gap:22px;min-height:0}
+.tutorial-board-wrap{display:grid;place-items:center;min-height:0}
+.tutorial-board{--tcell:78px;display:grid;grid-template-columns:repeat(5,var(--tcell));grid-auto-rows:var(--tcell);border:2px solid #a53cf2;box-shadow:0 0 24px #a53cf255}
+.tcell{width:var(--tcell);height:var(--tcell);display:grid;place-items:center;background:#fff;color:#11111a;border-right:1px solid #ddd;border-bottom:1px solid #ddd;font-size:30px;font-weight:900}
+.tcell.demo{background:#e8d8ff;box-shadow:inset 0 0 0 4px #a833ff,0 0 16px #a833ff;z-index:2}
+.tcell.cleared{background:#fff;color:transparent}
+.tutorial-copy{align-self:center}.tutorial-step{font-size:20px;color:#d5cbe3}.tutorial-equation{font-size:42px;font-weight:950;color:#ffd43d;margin:18px 0;min-height:52px}.tutorial-rule{font-size:19px;line-height:1.45;color:#eee}
+.tutorial-ready{text-align:center}.tutorial-ready h2{font-size:34px;margin:0 0 10px}.tutorial-ready button{margin:4px}
+@media(max-width:1100px) and (orientation:landscape){.game-header{grid-template-columns:210px minmax(220px,1fr) 215px 54px}.tutorial-board{--tcell:62px}}
+@media(orientation:portrait),(max-width:800px){.game-header{grid-template-columns:1fr 1.1fr 1fr 42px}.tutorial-shell{height:98dvh;padding:10px}.tutorial-body{grid-template-columns:1fr;grid-template-rows:minmax(300px,1fr) auto}.tutorial-board{--tcell:min(17vw,65px)}.tutorial-copy{text-align:center}.tutorial-equation{font-size:30px;margin:5px}.tutorial-rule{font-size:14px}}

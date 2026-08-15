@@ -16,6 +16,7 @@
       <div class="home-actions">
         <button id="startBtn" class="primary">Start</button>
         <button id="resumeBtn" class="secondary" hidden>Resume</button>
+        <button id="howToBtn" class="secondary">How to Play</button>
       </div>
     </div>
   </section>
@@ -46,11 +47,38 @@
     </div>
   </section>
 
+
+
+  <section id="tutorial" class="screen tutorial-screen">
+    <div class="tutorial-shell">
+      <div class="tutorial-head">
+        <div>
+          <div class="tutorial-kicker">HOW TO PLAY</div>
+          <h2>Find it. Solve it. Clear it.</h2>
+        </div>
+        <button id="skipTutorialBtn" class="secondary">Skip</button>
+      </div>
+      <div class="tutorial-body">
+        <div class="tutorial-board-wrap">
+          <div id="tutorialBoard" class="tutorial-board"></div>
+        </div>
+        <div class="tutorial-copy">
+          <div id="tutorialStep" class="tutorial-step">Watch the highlighted numbers.</div>
+          <div id="tutorialEquation" class="tutorial-equation"></div>
+          <div id="tutorialRule" class="tutorial-rule">Pick 3 numbers in one straight line that make a true equation.</div>
+        </div>
+      </div>
+      <div id="tutorialReady" class="tutorial-ready" hidden>
+        <h2>READY TO PLAY?</h2>
+        <button id="tutorialPlayBtn" class="primary">PLAY</button>
+        <button id="replayTutorialBtn" class="secondary">Show me again</button>
+      </div>
+    </div>
+  </section>
+
   <section id="game" class="screen game-screen">
     <div class="game-layout">
       <header class="game-header">
-        <button id="exitBtn" class="header-button compact" aria-label="Exit">EXIT</button>
-
         <div class="stage-box">
           <div class="stage-main">STAGE <span id="stageLabel">1</span></div>
           <div id="modeLabel" class="stage-sub">Addition · Beginner</div>
@@ -68,7 +96,6 @@
 
         <div class="header-actions">
           <button id="fullscreenBtn" class="header-button icon-only" aria-label="Full screen">⛶</button>
-          <button id="soundBtn" class="header-button icon-only" aria-label="Sound">🔊</button>
         </div>
       </header>
 
@@ -116,8 +143,8 @@
         <button id="quitSaveBtn" class="control quit-save">
           <span class="control-icon">⏻</span><span>QUIT / SAVE</span>
         </button>
-        <button id="settingsBtn" class="control settings">
-          <span class="control-icon">⚙</span><span>SETTINGS</span>
+        <button id="soundBtn" class="control sound-control">
+          <span class="control-icon">🔊</span><span>SOUND</span>
         </button>
       </aside>
 
