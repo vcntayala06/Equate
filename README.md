@@ -1,17 +1,13 @@
-# Equate Build 8
+# Equate — Accuracy-Audited Build 9
 
-- Beginner is fixed at 5x5.
-- Removed the top-left gameplay Exit button.
-- Removed Settings.
-- Moved Sound into the right-side control stack where Settings was.
-- Quit / Save remains the intentional leave-game workflow.
-- Full Screen remains in the header.
-- Added a visual first-play How to Play tutorial:
-  - actual 5x5 board
-  - 3 quick animated examples
-  - horizontal, vertical, and cleared-space concepts
-  - Ready to Play? + Play
-  - Show me again
-  - Skip
-- Tutorial is automatic only on first play and can be reopened from the home screen.
-- Preserves Build 7 gameplay and scoring behavior.
+Open `index.html` in a modern browser. No installation or network connection is required.
+
+This build includes Solo and local 2 Player head-to-head play, exact 5×5/6×6/7×7/9×9 difficulty boards, progressive diagonal and reverse unlocks, intentional Save & Quit, a validator-driven animated tutorial, and two free hints per stage followed by a five-point charge (never below zero).
+
+## Accuracy audit
+
+Gameplay selections, hints, tutorial examples, unlock demonstrations, reverse behavior, and generated-board audits use `validator.js`.
+
+With Node.js installed, run `node tests.js`.
+
+The suite checks known-good and known-bad arithmetic, cleared-space paths, blocked-number paths, unlock states, reverse direction, and 2,000 generated boards.

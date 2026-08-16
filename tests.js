@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('assert'),C=require('./validator.js');
+let passed=0;const test=(name,fn)=>{fn();passed++;console.log('PASS',name);};
+test('known-good arithmetic',()=>{assert(C.equationValid(4,3,7,'add'));assert(C.equationValid(16,6,10,'sub'));assert(C.equationValid(6,4,24,'mul'));assert(C.equationValid(24,6,4,'div'));});
+test('known-bad arithmetic',()=>{assert(!C.equationValid(12,6,3,'sub'));assert(!C.equationValid(5,4,8,'add'));assert(!C.equationValid(7,2,3,'div'));assert(!C.equationValid(4,0,0,'div'));});
+const board=values=>values.map((value,id)=>({id,value:value===null?0:value,blank:value===null}));
+test('touching horizontal and vertical paths',()=>{let b=board([4,3,7,9,9,3,2,8,9,9,7,9,9,9,9,9,9,9,9,9,9,9,9,9,9]);assert(C.validateMove({board:b,rows:5,cols:5,cells:[0,1,2],stage:1,mode:'add'}));assert(C.validateMove({board:b,rows:5,cols:5,cells:[0,5,10],stage:1,mode:'add'}));});
+test('cleared spaces connect active numbers',()=>{const b=board([8,null,4,null,12]);assert(C.validateMove({board:b,rows:1,cols:5,cells:[0,2,4],stage:1,mode:'add'}));});
+test('an active number can never be skipped',()=>{const b=board([8,99,4,null,12]);assert(!C.validateMove({board:b,rows:1,cols:5,cells:[0,2,4],stage:9,mode:'add'}));});
+test('diagonal and reverse obey exact unlock state',()=>{const diag=board([4,0,0,0,0,0,3,0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,0]);assert(!C.validateMove({board:diag,rows:5,cols:5,cells:[0,6,12],stage:2,mode:'add'}));assert(C.validateMove({board:diag,rows:5,cols:5,cells:[0,6,12],stage:3,mode:'add'}));const rev=board([7,3,10]);assert(!C.validateMove({board:rev,rows:1,cols:3,cells:[2,1,0],stage:4,mode:'sub'}));assert(C.validateMove({board:rev,rows:1,cols:3,cells:[2,1,0],stage:5,mode:'sub'}));});
+test('all generated boards pass live-validator audit',()=>{let seed=123456789;const random=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);for(const difficulty of Object.keys(C.DIFFICULTIES))for(const mode of ['add','sub','mul','div','mixed'])for(const stage of [1,3,5,9])for(let i=0;i<25;i++){const g=C.generateBoard({difficulty,mode,stage,random});assert.strictEqual(g.rows,C.DIFFICULTIES[difficulty].size);const moves=C.enumerate({board:g.board,rows:g.rows,cols:g.cols,stage,mode});assert(moves.length>0);moves.forEach(m=>assert(C.validateMove({board:g.board,rows:g.rows,cols:g.cols,cells:m.cells,stage,mode})));}});
+console.log(`\n${passed} test groups passed; 2,000 generated boards audited.`);

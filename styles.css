@@ -14,13 +14,15 @@ button{font:inherit;color:inherit}
 .home-card,.setup-card{width:min(760px,94vw);background:linear-gradient(180deg,#151027,#0c0816);border:1px solid #63328f;border-radius:26px;padding:34px;box-shadow:0 0 42px #9039e32e}
 .brand{font-size:clamp(58px,10vw,112px);margin:0;letter-spacing:.06em;text-align:center}
 .tagline{text-align:center;color:#d2c1ed;font-size:20px}
-.home-actions{display:flex;justify-content:center;gap:12px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:560px;margin:28px auto 0}.home-actions .secondary{grid-column:span 1}.home-actions button[hidden]{display:none}
 .primary,.secondary,.choice,.back-btn{border-radius:14px;border:1px solid #6f3b9d;padding:13px 18px;font-weight:900;background:#21133c}
 .primary{background:linear-gradient(135deg,#6b2bce,#a438ed)}
+.primary.alt{background:linear-gradient(135deg,#1648b8,#7b39db)}
 .secondary{background:#171022}
 .back-btn{padding:8px 12px}
-.setup-card h2{font-size:32px}.choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
+.setup-card h2{font-size:32px}.choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}.choice small{display:block;color:#cbbbdc;margin-top:4px}.difficulties{grid-template-columns:repeat(4,1fr)}
 .choice.selected{outline:3px solid #bd5cff;background:#351655}.play-btn{width:100%}.play-btn:disabled{opacity:.4}
+.player-names{display:grid;grid-template-columns:1fr 1fr;gap:12px}.player-names label{font-size:12px;font-weight:900;color:#cab7df}.player-names input{display:block;width:100%;margin-top:5px;border:1px solid #7542a4;border-radius:10px;background:#090610;color:white;padding:11px;font:inherit}
 
 .game-screen{padding:0;overflow:hidden}
 .game-layout{
@@ -60,6 +62,7 @@ button{font:inherit;color:inherit}
 .progress-track{height:18px;flex:1;background:#211a2b;border-radius:20px;overflow:hidden}
 .progress-track>div{height:100%;width:0;background:linear-gradient(90deg,#9e00ff,#ff5ce5)}
 .stage-grade{margin-top:12px;color:#cfc8d7}.rules{text-align:left;display:grid;gap:11px;margin-top:18px;font-size:13px;color:#eee}
+.turn-panel{border:1px solid #8d43d0;border-radius:12px;padding:9px;margin-bottom:10px;background:#170d28}.turn-panel span{display:block;color:#ffd43d;font-weight:950;margin-bottom:4px}.turn-panel div{font-size:13px}
 
 .play-area{grid-area:play;min-width:0;min-height:0;border:1px solid #3e52db;border-radius:18px;background:linear-gradient(180deg,#0d0917,#07050d);display:grid;grid-template-rows:minmax(0,1fr) 26px 24px;padding:6px}
 .board-wrap{min-height:0;min-width:0;display:grid;place-items:center;overflow:hidden}
@@ -185,8 +188,11 @@ button{font:inherit;color:inherit}
 .tutorial-board{--tcell:78px;display:grid;grid-template-columns:repeat(5,var(--tcell));grid-auto-rows:var(--tcell);border:2px solid #a53cf2;box-shadow:0 0 24px #a53cf255}
 .tcell{width:var(--tcell);height:var(--tcell);display:grid;place-items:center;background:#fff;color:#11111a;border-right:1px solid #ddd;border-bottom:1px solid #ddd;font-size:30px;font-weight:900}
 .tcell.demo{background:#e8d8ff;box-shadow:inset 0 0 0 4px #a833ff,0 0 16px #a833ff;z-index:2}
+.tcell.pulse{animation:tutorialPulse .7s ease}.tcell.illegal{background:#ffd9df;box-shadow:inset 0 0 0 5px #ff4d55}.tcell.illegal:after{content:'✕';position:absolute;color:#d80021;font-size:52px}.tcell{position:relative}@keyframes tutorialPulse{50%{transform:scale(.9);background:#d2afff}}
 .tcell.cleared{background:#fff;color:transparent}
 .tutorial-copy{align-self:center}.tutorial-step{font-size:20px;color:#d5cbe3}.tutorial-equation{font-size:42px;font-weight:950;color:#ffd43d;margin:18px 0;min-height:52px}.tutorial-rule{font-size:19px;line-height:1.45;color:#eee}
 .tutorial-ready{text-align:center}.tutorial-ready h2{font-size:34px;margin:0 0 10px}.tutorial-ready button{margin:4px}
 @media(max-width:1100px) and (orientation:landscape){.game-header{grid-template-columns:210px minmax(220px,1fr) 215px 54px}.tutorial-board{--tcell:62px}}
 @media(orientation:portrait),(max-width:800px){.game-header{grid-template-columns:1fr 1.1fr 1fr 42px}.tutorial-shell{height:98dvh;padding:10px}.tutorial-body{grid-template-columns:1fr;grid-template-rows:minmax(300px,1fr) auto}.tutorial-board{--tcell:min(17vw,65px)}.tutorial-copy{text-align:center}.tutorial-equation{font-size:30px;margin:5px}.tutorial-rule{font-size:14px}}
+.unlock-board{margin:18px auto;padding:24px;border:1px solid #8f3bd0;border-radius:16px;background:#08050e;color:#ffd43d;font-size:clamp(22px,5vw,44px);font-weight:950;letter-spacing:.08em}.winner-line{font-size:22px;color:#ffd43d;font-weight:950;margin:12px}.good{color:#72e7a0}.bad{color:#ff7d8b}.warn{color:#ffd43d}
+@media(max-width:650px){.home-actions,.player-names{grid-template-columns:1fr}.difficulties,.choice-grid{grid-template-columns:1fr 1fr}.setup-card{padding:18px;max-height:96dvh;overflow:auto}}

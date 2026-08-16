@@ -1,523 +1,63 @@
-(() => {
-"use strict";
-
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const SAVE="equate-build5-save", BEST="equate-build5-best";
-const SYMBOL={add:"+",sub:"−",mul:"×",div:"÷"};
-const LABEL={add:"Addition",sub:"Subtraction",mul:"Multiplication",div:"Division",mixed:"Mixed"};
-const DIRS={right:[0,1],down:[1,0],dr:[1,1],dl:[1,-1],left:[0,-1],up:[-1,0],ur:[-1,1],ul:[-1,-1]};
-const DIFF={
- beginner:{base:1,size:5,max:9},
- intermediate:{base:41,size:5,max:30},
- advanced:{base:81,size:6,max:99},
- expert:{base:121,size:9,max:250}
-};
-
-const state={
- op:null,difficulty:null,stage:1,rows:4,cols:4,board:[],
- selected:[],hintCells:[],found:0,baseScore:0,penalty:0,freeUndos:2,
- history:[],secondsLeft:600,timerId:null,paused:false,sound:true,stageActive:false,
- pointerDown:false,inputEnabled:true,runningScore:0,page:1,lastSolveAt:null,quickBonusPool:0
-};
-
-const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
-const idx=(r,c)=>r*state.cols+c;
-const coord=i=>[Math.floor(i/state.cols),i%state.cols];
-const inBounds=(r,c)=>r>=0&&c>=0&&r<state.rows&&c<state.cols;
-const cap=s=>s?s[0].toUpperCase()+s.slice(1):"";
-
-function show(id){$$(".screen").forEach(x=>x.classList.toggle("active",x.id===id))}
-function ops(){return state.op==="mixed"?["add","sub","mul","div"]:[state.op]}
-
-function rules(){
- const d=DIFF[state.difficulty], local=Math.max(1,state.stage-d.base+1);
- let size=d.size;
- if(state.difficulty==="beginner"){
-   size = 5;
- } else if(state.difficulty==="intermediate"){
-   size = Math.max(6, d.size + Math.floor((local-1)/10));
- } else if(state.difficulty==="advanced"){
-   size = Math.max(7, d.size + Math.floor((local-1)/10));
- } else {
-   size = Math.max(9, d.size + Math.floor((local-1)/10));
- }
- const diag=state.difficulty!=="beginner"||local>=5;
- const reverse=state.difficulty==="advanced"||state.difficulty==="expert"||local>=45;
- let max=d.max;
- if(state.difficulty==="beginner") max=local<=10?9:local<=20?20:local<=30?50:99;
- return {local,size,diag,reverse,max};
-}
-
-function equationValid(a,b,c,op){
- if(op==="add")return a+b===c;
- if(op==="sub")return a-b===c;
- if(op==="mul")return a*b===c;
- return b!==0&&a/b===c&&Number.isInteger(c);
-}
-function makeEquation(op,max){
- let a,b,c;
- if(op==="add"){a=rnd(1,max);b=rnd(1,max);c=a+b}
- else if(op==="sub"){c=rnd(0,max);b=rnd(1,max);a=b+c}
- else if(op==="mul"){const m=Math.max(3,Math.min(15,Math.floor(Math.sqrt(max*2))));a=rnd(2,m);b=rnd(2,m);c=a*b}
- else{const m=Math.max(3,Math.min(12,Math.floor(Math.sqrt(max*2))));b=rnd(2,m);c=rnd(1,m);a=b*c}
- return {a,b,c,op,text:`${a} ${SYMBOL[op]} ${b} = ${c}`};
-}
-function allowedDirs(){
- const r=rules(), arr=["right","down"];
- if(r.diag)arr.push("dr","dl");
- if(r.reverse)arr.push("left","up","ur","ul");
- return arr;
-}
-function directionAllowed(d){
- if(!d)return false;
- const r=rules();
- if(d.dr===0&&d.dc===1)return true;
- if(d.dr===1&&d.dc===0)return true;
- if(r.diag&&d.dr===1&&Math.abs(d.dc)===1)return true;
- if(r.reverse){
-   if(d.dr===0&&d.dc===-1)return true;
-   if(d.dr===-1&&d.dc===0)return true;
-   if(r.diag&&d.dr===-1&&Math.abs(d.dc)===1)return true;
- }
- return false;
-}
-
-function newBoard(){
- state.inputEnabled=false; state.pointerDown=false; state.selected=[]; state.hintCells=[]; state.history=[];
- const r=rules(); state.rows=r.size;state.cols=r.size;
- let chosen=null;
-
- for(let attempt=0;attempt<120;attempt++){
-   const board=Array.from({length:state.rows*state.cols},(_,i)=>({id:i,value:null,blank:false}));
-   const planted=[];
-   const target =
-     state.rows<=4 ? 4 :
-     state.rows===5 ? 6 :
-     state.rows===6 ? 8 :
-     state.rows===7 ? 10 :
-     state.rows===8 ? 12 : 14;
-   let safe=0;
-   while(planted.length<target&&safe++<350){
-     const opList=ops(),op=opList[rnd(0,opList.length-1)],eq=makeEquation(op,r.max),dirs=allowedDirs(),dirName=dirs[rnd(0,dirs.length-1)];
-     const [dr,dc]=DIRS[dirName];
-     for(let t=0;t<80;t++){
-       const sr=rnd(0,state.rows-1),sc=rnd(0,state.cols-1);
-       const er=sr+dr*2,ec=sc+dc*2;if(!inBounds(er,ec))continue;
-       const cells=[idx(sr,sc),idx(sr+dr,sc+dc),idx(sr+dr*2,sc+dc*2)];
-       if(cells.some(i=>board[i].value!==null))continue;
-       [eq.a,eq.b,eq.c].forEach((v,k)=>board[cells[k]].value=v);
-       planted.push({...eq,cells,dirName});break;
-     }
-   }
-   if(!chosen||planted.length>chosen.planted.length)chosen={board,planted};
-   if(planted.length>=3)break;
- }
- state.board=chosen.board;
- for(const cell of state.board)if(cell.value===null)cell.value=state.difficulty==="beginner"?rnd(0,r.max):rnd(0,Math.max(12,r.max));
- renderBoard();
- state.pointerDown=false;
- state.inputEnabled=true;
- if(state.lastSolveAt===null) state.lastSolveAt=performance.now();
- 
- save();
-}
-
-function sameLine(a,b){
- if(a===b)return null;
- const [r1,c1]=coord(a),[r2,c2]=coord(b),rd=r2-r1,cd=c2-c1;
- if(!(rd===0&&cd!==0)&&!(cd===0&&rd!==0)&&!(Math.abs(rd)===Math.abs(cd)&&rd!==0))return null;
- return {dr:Math.sign(rd),dc:Math.sign(cd)};
-}
-function rayConnect(a,b){
- const d=sameLine(a,b);if(!d)return null;
- const [r2,c2]=coord(b);let [r,c]=coord(a);r+=d.dr;c+=d.dc;
- while(r!==r2||c!==c2){if(!state.board[idx(r,c)].blank)return null;r+=d.dr;c+=d.dc}
- return d;
-}
-function canAppend(i){
- if(!state.inputEnabled)return {ok:false,msg:"One moment…"};
- if(state.board[i].blank)return {ok:false,msg:"That tile is already cleared."};
- if(state.selected.includes(i))return {ok:false,msg:"That number is already selected."};
- if(state.selected.length===0)return {ok:true};
- const prev=state.selected[state.selected.length-1],d=rayConnect(prev,i);
- if(!d)return {ok:false,msg:"Not allowed — an uncleared number blocks that path."};
- if(!directionAllowed(d)){
-   if(!rules().diag&&Math.abs(d.dr)===1&&Math.abs(d.dc)===1)return {ok:false,msg:"Diagonal equations unlock soon."};
-   return {ok:false,msg:"That direction unlocks later."};
- }
- if(state.selected.length>=2){
-   const first=rayConnect(state.selected[0],state.selected[1]);
-   if(first&&(first.dr!==d.dr||first.dc!==d.dc))return {ok:false,msg:"Stay in one direction."};
- }
- return {ok:true};
-}
-function validateTriple(cells){
- if(!Array.isArray(cells)||cells.length!==3)return null;
-
- const d1=rayConnect(cells[0],cells[1]);
- const d2=rayConnect(cells[1],cells[2]);
- if(!d1||!d2)return null;
- if(d1.dr!==d2.dr||d1.dc!==d2.dc)return null;
- if(!directionAllowed(d1))return null;
-
- const [a,b,c]=cells.map(i=>state.board[i].value);
- for(const op of ops()){
-   if(equationValid(a,b,c,op)){
-     return {cells:[...cells],a,b,c,op,text:`${a} ${SYMBOL[op]} ${b} = ${c}`};
-   }
- }
- return null;
-}
-function currentEquation(){return validateTriple(state.selected)}
-function clearSelection(delay=0){
- setTimeout(()=>{state.selected=[];state.hintCells=[];syncClasses()},delay);
-}
-function selectTile(i){
- if(!state.stageActive||state.paused||!state.inputEnabled)return;
- if(state.selected.includes(i)){clearSelection();feedback("Selection cleared.","");return}
- const test=canAppend(i);
- if(!test.ok){feedback(test.msg,"bad");sound("bad");flash(i);clearSelection(180);return}
- state.selected.push(i);state.hintCells=[];syncClasses();
- if(state.selected.length===3){
-   const eq=currentEquation();
-   if(eq)solve(eq);
-   else{feedback("Not an equation — try again.","bad");sound("bad");state.selected.forEach(flash);clearSelection(240)}
- }
-}
-
-function quickFindBonus(){
- const now=performance.now();
- if(state.lastSolveAt===null){state.lastSolveAt=now;return 0}
- const seconds=(now-state.lastSolveAt)/1000;
- state.lastSolveAt=now;
- if(seconds<=3)return 8;
- if(seconds<=5)return 5;
- if(seconds<=8)return 3;
- return 0;
-}
-function showBonus(points){
- if(!points)return;
- const el=$("#bonusToast");
- el.classList.remove("bonus-pop");
- void el.offsetWidth;
- el.textContent=points>=8?`⚡ LIGHTNING! +${points} BONUS`:points>=5?`⚡ QUICK! +${points} BONUS`:`FAST! +${points} BONUS`;
- el.classList.add("bonus-pop");
- clearTimeout(showBonus.t);
- showBonus.t=setTimeout(()=>{el.textContent="";el.classList.remove("bonus-pop")},850);
-}
-
-function solve(eq){
- state.inputEnabled=false;
- state.history.push({cells:state.selected.map(i=>({i,value:state.board[i].value,blank:state.board[i].blank})),found:state.found,baseScore:state.baseScore});
- state.selected.forEach(i=>state.board[i].blank=true);
- state.found++;state.baseScore=Math.min(100,state.baseScore+10);
- const qBonus=quickFindBonus();
- if(qBonus){state.runningScore+=qBonus;state.quickBonusPool+=qBonus;showBonus(qBonus)}
- showEquation(eq.text);sound("good");
- state.selected=[];state.hintCells=[];renderAll();save();
- if(state.found>=10){finish(false);return}
- setTimeout(()=>{
-   if(enumerate(1).length===0){
-     state.page++;
-     
-     setTimeout(newBoard,350);
-   }else{
-     state.inputEnabled=true;syncClasses();
-   }
- },220);
-}
-function enumerate(limit=10){
- const hits=[],dirs=allowedDirs();
- for(let i=0;i<state.board.length;i++){
-   if(state.board[i].blank)continue;
-   const [sr,sc]=coord(i);
-
-   for(const name of dirs){
-     const [dr,dc]=DIRS[name];
-
-     let r=sr+dr,c=sc+dc,second=null;
-     while(inBounds(r,c)){
-       const j=idx(r,c);
-       if(!state.board[j].blank){second=j;break}
-       r+=dr;c+=dc;
-     }
-     if(second===null)continue;
-
-     r+=dr;c+=dc;
-     let third=null;
-     while(inBounds(r,c)){
-       const j=idx(r,c);
-       if(!state.board[j].blank){third=j;break}
-       r+=dr;c+=dc;
-     }
-     if(third===null)continue;
-
-     const valid=validateTriple([i,second,third]);
-     if(valid){
-       hits.push({cells:[i,second,third],eq:valid});
-       if(hits.length>=limit)return hits;
-     }
-   }
- }
- return hits;
-}
-function hint(){
- if(!state.stageActive||state.paused)return;
- const hits=enumerate(1);
- if(!hits.length){state.page++;setTimeout(newBoard,300);return}
- state.selected=[];state.hintCells=hits[0].cells;syncClasses();feedback(`Hint: ${hits[0].eq.text}`,"warn");sound("hint");
-}
-function undo(){
- if(!state.stageActive||state.paused)return;
- const snap=state.history.pop();
- if(!snap){feedback("Nothing to undo on this page.","warn");return}
- snap.cells.forEach(c=>{state.board[c.i].value=c.value;state.board[c.i].blank=c.blank});
- state.found=snap.found;state.baseScore=snap.baseScore;
- if(state.freeUndos>0){state.freeUndos--;feedback("Undo used — free.","warn")}
- else{state.penalty+=5;feedback("Undo used — 5 point penalty.","warn")}
- state.inputEnabled=true;state.selected=[];state.hintCells=[];renderAll();save();
-}
-
-function renderBoard(){
- const board=$("#board");board.innerHTML="";board.style.setProperty("--cols",state.cols);
- state.board.forEach((cell,i)=>{
-   const b=document.createElement("button");b.type="button";b.className="cell";b.dataset.i=i;
-   if(cell.blank){b.classList.add("blank");b.setAttribute("aria-label","cleared")}
-   else{b.textContent=cell.value;b.setAttribute("aria-label",String(cell.value))}
-   board.appendChild(b);
- });
- fitBoard();syncClasses();
-}
-function syncClasses(){
- $$("#board .cell").forEach((el,i)=>{
-   el.classList.toggle("selected",state.selected.includes(i));
-   el.classList.toggle("hint",state.hintCells.includes(i));
-   el.classList.remove("match-peer");
- });
-}
-function fitBoard(){
- const wrap=$("#boardWrap");if(!wrap||!state.cols)return;
- const w=Math.max(220,wrap.clientWidth-16),h=Math.max(220,wrap.clientHeight-16);
- let cell=Math.floor(Math.min(w/state.cols,h/state.rows));
- cell=Math.max(42,Math.min(92,cell));
- $("#board").style.setProperty("--cell",cell+"px");
-}
-function renderAll(){
- $("#stageLabel").textContent=state.stage;$("#modeLabel").textContent=`${LABEL[state.op]} · ${cap(state.difficulty)}`;
- $("#runningScoreLabel").textContent=(state.runningScore||0)+state.baseScore;
- $("#bestLabel").textContent=loadBest();$("#foundLabel").textContent=state.found;$("#scoreLabel").textContent=state.baseScore;
- $("#progressFill").style.width=Math.min(100,state.found*10)+"%";$("#undoCost").textContent=state.freeUndos>0?`${state.freeUndos} free`:"−5 points";
- renderTimer();renderBoard();
-}
-function renderTimer(){
- const s=state.secondsLeft,m=Math.floor(s/60),sec=s%60,pct=s/600;
- $("#timerLabel").textContent=`${m}:${String(sec).padStart(2,"0")}`;
- const deg=Math.max(0,Math.min(360,pct*360));
- $("#timerRing").style.background=`conic-gradient(#5df02e 0 ${deg*.35}deg,#ffe126 ${deg*.35}deg ${deg*.63}deg,#ff7c16 ${deg*.63}deg ${deg*.82}deg,#ff4d55 ${deg*.82}deg ${deg}deg,#201825 ${deg}deg 360deg)`;
-}
-function showEquation(t){$("#equationToast").textContent=t+" ✓";clearTimeout(showEquation.t);showEquation.t=setTimeout(()=>$("#equationToast").textContent="",1300)}
-function feedback(t,type=""){ /* Build 7: no persistent gameplay message area */ }
-function flash(i){const e=$(`#board .cell[data-i="${i}"]`);if(!e)return;e.classList.remove("rejected");void e.offsetWidth;e.classList.add("rejected");setTimeout(()=>e.classList.remove("rejected"),260)}
-
-let audioCtx=null;
-function tone(freq,dur=.07,type="sine",gain=.035,delay=0){
- if(!state.sound)return;
- try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();const s=audioCtx.currentTime+delay,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(freq,s);g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(gain,s+.006);g.gain.exponentialRampToValueAtTime(.0001,s+dur);o.connect(g);g.connect(audioCtx.destination);o.start(s);o.stop(s+dur+.02)}catch{}
-}
-function sound(k){
- if(k==="good"){tone(660,.06);tone(880,.08,"sine",.04,.06)}
- else if(k==="bad")tone(170,.09,"square",.02);
- else if(k==="hint"){tone(520,.05);tone(690,.06,"sine",.03,.05)}
- else if(k==="clear"){tone(523,.07);tone(659,.07,"sine",.04,.06);tone(784,.12,"sine",.045,.12)}
- else if(k==="tick")tone(950,.03,"square",.016);
- else if(k==="pause")tone(330,.04,"sine",.02);
- if(navigator.vibrate)navigator.vibrate(k==="bad"?[18,20,18]:22);
-}
-
-async function toggleFullscreen(){
- try{
-   if(!document.fullscreenElement){
-     if(document.documentElement.requestFullscreen){
-       await document.documentElement.requestFullscreen();
-     }
-   }else if(document.exitFullscreen){
-     await document.exitFullscreen();
-   }
- }catch(e){
-   feedback("Full screen isn't available in this browser.","warn");
- }
- setTimeout(fitBoard,120);
-}
-
-function startTimer(){
- clearInterval(state.timerId);state.timerId=setInterval(()=>{
-   if(!state.stageActive||state.paused)return;
-   state.secondsLeft=Math.max(0,state.secondsLeft-1);renderTimer();
-   if(state.secondsLeft>0&&state.secondsLeft<=5)sound("tick");
-   if(state.secondsLeft===0)finish(true);else if(state.secondsLeft%10===0)save();
- },1000);
-}
-function bonus(){return Math.round((state.secondsLeft/600)*50)}
-function loadBest(){return Number(localStorage.getItem(BEST)||0)}
-function saveBest(v){if(v>loadBest())localStorage.setItem(BEST,String(v))}
-function finish(timedOut){
- if(!state.stageActive)return;state.stageActive=false;state.inputEnabled=false;clearInterval(state.timerId);
- const b=bonus(),stagePoints=Math.max(0,state.baseScore+b-state.penalty),passed=state.found>=8,perfect=state.found>=10;
- if(passed)state.runningScore+=stagePoints;saveBest(state.runningScore);clearSave();if(perfect)sound("clear");
- $("#resultBadge").textContent=perfect?"PERFECT CLEAR":passed?"PASS":"REPLAY";
- $("#resultTitle").textContent=timedOut?"Time!":perfect?"Perfect Clear!":passed?"Stage Passed":"Keep Going";
- $("#resultBase").textContent=state.baseScore;$("#resultBonus").textContent="+"+b;$("#resultPenalty").textContent=state.penalty?"−"+state.penalty:"0";$("#resultTotal").textContent=stagePoints;
- $("#nextBtn").hidden=!passed;$("#stageOverlay").hidden=false;$("#runningScoreLabel").textContent=state.runningScore;
-}
+(()=>{'use strict';
+const C=window.EquateCore,$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const SAVE='equate-intentional-save-v9',BEST='equate-best-v9',SEEN='equate-tutorial-seen-v2',LABEL={add:'Addition',sub:'Subtraction',mul:'Multiplication',div:'Division',mixed:'Mixed'};
+const state={mode:'solo',op:null,difficulty:null,stage:1,rows:5,cols:5,board:[],selected:[],hintCells:[],found:0,stageScore:0,hintPenalty:0,hintsUsed:0,history:[],secondsLeft:600,timerId:null,paused:false,sound:true,stageActive:false,inputEnabled:true,pointerDown:false,runningScore:0,quickBonus:0,lastSolveAt:null,players:['Player 1','Player 2'],playerScores:[0,0],turn:0};
+function show(id){$$('.screen').forEach(x=>x.classList.toggle('active',x.id===id));}
+function args(cells){return {board:state.board,rows:state.rows,cols:state.cols,cells,stage:state.stage,mode:state.op};}
+function move(cells){return C.validateMove(args(cells));}
+function clearTransient(){state.pointerDown=false;state.selected=[];state.hintCells=[];state.inputEnabled=true;}
 function startStage(){
- state.found=0;state.baseScore=0;state.penalty=0;state.freeUndos=2;state.history=[];state.secondsLeft=600;state.selected=[];state.hintCells=[];state.paused=false;state.stageActive=true;state.inputEnabled=true;state.page=1;state.lastSolveAt=performance.now();state.quickBonusPool=0;
- $("#stageOverlay").hidden=true;$("#pauseOverlay").hidden=true;show("game");newBoard();renderAll();startTimer();save();
+ clearInterval(state.timerId);clearTransient();Object.assign(state,{found:0,stageScore:0,hintPenalty:0,hintsUsed:0,history:[],secondsLeft:600,paused:false,stageActive:true,quickBonus:0,lastSolveAt:performance.now()});
+ $('#stageOverlay').hidden=true;$('#pauseOverlay').hidden=true;$('#unlockOverlay').hidden=true;show('game');newBoard();renderAll();startTimer();maybeUnlockDemo();
 }
-function pause(){if(!state.stageActive)return;state.paused=true;state.pointerDown=false;$("#pauseOverlay").hidden=false;sound("pause")}
-function resume(){state.paused=false;state.inputEnabled=true;$("#pauseOverlay").hidden=true;sound("pause")}
+function newBoard(){clearTransient();state.inputEnabled=false;const made=C.generateBoard({difficulty:state.difficulty,stage:state.stage,mode:state.op});state.board=made.board;state.rows=made.rows;state.cols=made.cols;renderBoard();state.inputEnabled=true;}
+function renderBoard(){const b=$('#board');b.innerHTML='';b.style.setProperty('--cols',state.cols);state.board.forEach((cell,i)=>{const el=document.createElement('button');el.className='cell'+(cell.blank?' blank':'');el.dataset.i=i;el.textContent=cell.blank?'':cell.value;el.setAttribute('aria-label',cell.blank?'cleared':String(cell.value));b.appendChild(el);});fitBoard();syncClasses();}
+function syncClasses(){$$('#board .cell').forEach((el,i)=>{el.classList.toggle('selected',state.selected.includes(i));el.classList.toggle('hint',state.hintCells.includes(i));});}
+function fitBoard(){const w=$('#boardWrap');if(!w)return;const cell=Math.max(27,Math.min(92,Math.floor(Math.min((w.clientWidth-14)/state.cols,(w.clientHeight-14)/state.rows))));$('#board').style.setProperty('--cell',cell+'px');}
+function canAppend(i){if(!state.inputEnabled||state.board[i].blank||state.selected.includes(i))return false;if(!state.selected.length)return true;const partial=[...state.selected,i];if(partial.length===3)return !!move(partial)||pathOnly(partial);return pathOnly(partial);}
+function pathOnly(cells){if(cells.length===2){const fake=[...cells,cells[1]];const d=C.validatePath(state.board,state.rows,state.cols,[cells[0],cells[1],nextCandidate(cells[1],cells[0])],state.stage);return !!d||rayAllowed(cells[0],cells[1]);}return !!C.validatePath(state.board,state.rows,state.cols,cells,state.stage);}
+function rayAllowed(a,b){const d=C.validatePath;const [r1,c1]=[Math.floor(a/state.cols),a%state.cols],[r2,c2]=[Math.floor(b/state.cols),b%state.cols],rd=Math.sign(r2-r1),cd=Math.sign(c2-c1);if(!((r1===r2)||(c1===c2)||(Math.abs(r2-r1)===Math.abs(c2-c1))))return false;const name=Object.entries(C.DIRS).find(([,v])=>v[0]===rd&&v[1]===cd)?.[0];if(!C.allowedDirections(state.stage).includes(name))return false;let r=r1+rd,c=c1+cd;while(r!==r2||c!==c2){if(!state.board[r*state.cols+c].blank)return false;r+=rd;c+=cd;}return true;}
+function nextCandidate(){return -1;}
+function selectTile(i){if(!state.stageActive||state.paused||!state.inputEnabled)return;if(state.selected.includes(i)){clearSelection();return;}if(!canAppend(i)){bad('That path is blocked or not unlocked.');return;}state.selected.push(i);state.hintCells=[];syncClasses();if(state.selected.length===3){const eq=move(state.selected);if(eq)solve(eq);else bad('Not an equation — try again.');}}
+function clearSelection(delay=0){setTimeout(()=>{state.selected=[];state.hintCells=[];syncClasses();},delay);}
+function bad(msg){feedback(msg,'bad');beep(120,.08);$$('#board .selected').forEach(x=>x.classList.add('rejected'));clearSelection(260);if(state.mode==='two')switchTurn();}
+function solve(eq){state.inputEnabled=false;state.history.push({cells:eq.cells.map(i=>({i,value:state.board[i].value})),found:state.found,stageScore:state.stageScore,turn:state.turn,playerScores:[...state.playerScores]});eq.cells.forEach(i=>state.board[i].blank=true);state.found++;state.stageScore=Math.min(100,state.stageScore+10);const bonus=quickBonus();state.quickBonus+=bonus;if(state.mode==='two')state.playerScores[state.turn]+=10+bonus;showEquation(eq.text);if(bonus)showBonus(bonus);beep(620,.09);clearTransient();renderAll();if(state.found>=10){finish();return;}if(state.mode==='two')switchTurn();setTimeout(()=>{if(!C.enumerate(args([]),1).length)newBoard();else state.inputEnabled=true;},260);}
+function quickBonus(){const now=performance.now(),s=(now-state.lastSolveAt)/1000;state.lastSolveAt=now;return s<=3?8:s<=5?5:s<=8?3:0;}
+function switchTurn(){if(state.mode!=='two')return;state.turn=1-state.turn;renderPlayers();}
+function hint(){if(!state.stageActive||state.paused)return;const hit=C.enumerate(args([]),1)[0];if(!hit){newBoard();return;}if(state.hintsUsed>=2){const charge=Math.min(5,state.mode==='two'?state.playerScores[state.turn]:Math.max(0,state.stageScore-state.hintPenalty));state.hintPenalty+=charge;if(state.mode==='two')state.playerScores[state.turn]-=charge;}state.hintsUsed++;state.selected=[];state.hintCells=hit.cells;syncClasses();feedback(`Hint: ${hit.text}`,'warn');beep(440,.08);renderAll();}
+function undo(){if(!state.stageActive||state.paused)return;const s=state.history.pop();if(!s){feedback('Nothing to undo.','warn');return;}s.cells.forEach(c=>{state.board[c.i].value=c.value;state.board[c.i].blank=false;});state.found=s.found;state.stageScore=s.stageScore;state.turn=s.turn;state.playerScores=s.playerScores;clearTransient();renderAll();}
+function hintText(){return state.hintsUsed===0?'2 FREE':state.hintsUsed===1?'1 FREE':'−5 POINTS';}
+function renderAll(){$('#stageLabel').textContent=state.stage;$('#modeLabel').textContent=`${LABEL[state.op]} · ${state.difficulty[0].toUpperCase()+state.difficulty.slice(1)}`;$('#runningScoreLabel').textContent=state.mode==='two'?state.playerScores[state.turn]:state.runningScore+Math.max(0,state.stageScore-state.hintPenalty)+state.quickBonus;$('#bestLabel').textContent=localStorage.getItem(BEST)||0;$('#foundLabel').textContent=state.found;$('#scoreLabel').textContent=Math.max(0,state.stageScore-state.hintPenalty);$('#progressFill').style.width=state.found*10+'%';$('#hintCost').textContent=hintText();$('#rulesIndicator').textContent=C.rulesText(state.stage);$('#turnPanel').hidden=state.mode!=='two';$('#scoreTitle').textContent=state.mode==='two'?'TURN SCORE':'SCORE';renderPlayers();renderTimer();renderBoard();}
+function renderPlayers(){$('#turnLabel').textContent=state.mode==='two'?`${state.players[state.turn]}'s turn`:'';$('#p1Score').textContent=`${state.players[0]} ${state.playerScores[0]}`;$('#p2Score').textContent=`${state.players[1]} ${state.playerScores[1]}`;}
+function renderTimer(){const s=state.secondsLeft;$('#timerLabel').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;const deg=s/600*360;$('#timerRing').style.background=`conic-gradient(#5df02e 0 ${deg*.55}deg,#ffc400 ${deg*.55}deg ${deg*.8}deg,#ff4d55 ${deg*.8}deg ${deg}deg,#201825 ${deg}deg)`;}
+function startTimer(){clearInterval(state.timerId);state.timerId=setInterval(()=>{if(!state.paused&&state.stageActive){state.secondsLeft--;renderTimer();if(state.secondsLeft<=0)finish();}},1000);}
+function finish(){clearInterval(state.timerId);state.stageActive=false;const points=Math.max(0,state.stageScore-state.hintPenalty)+state.quickBonus;if(state.mode==='solo'){state.runningScore+=points;const best=Math.max(Number(localStorage.getItem(BEST)||0),state.runningScore);localStorage.setItem(BEST,best);}$('#resultBase').textContent=Math.max(0,state.stageScore-state.hintPenalty);$('#resultBonus').textContent='+'+state.quickBonus;$('#resultPenalty').textContent='−'+state.hintPenalty;$('#resultTotal').textContent=state.mode==='two'?state.playerScores.join(' — '):points;$('#winnerLine').textContent=state.mode==='two'?(state.playerScores[0]===state.playerScores[1]?'Tie game!':`${state.players[state.playerScores[0]>state.playerScores[1]?0:1]} leads!`):'';$('#stageOverlay').hidden=false;clearIntentionalSave();}
+function pause(){if(!state.stageActive)return;state.paused=true;state.pointerDown=false;$('#pauseOverlay').hidden=false;}
+function resumePause(){state.paused=false;state.inputEnabled=true;$('#pauseOverlay').hidden=true;}
+function intentionalSave(){const data={...state,timerId:null,pointerDown:false,selected:[],hintCells:[],history:[]};localStorage.setItem(SAVE,JSON.stringify(data));$('#resumeBtn').hidden=false;}
+function clearIntentionalSave(){localStorage.removeItem(SAVE);$('#resumeBtn').hidden=true;}
+function restore(){const raw=localStorage.getItem(SAVE);if(!raw)return;Object.assign(state,JSON.parse(raw));clearTransient();state.stageActive=true;state.paused=false;show('game');renderAll();startTimer();}
+function feedback(t,kind=''){$('#equationToast').textContent=t;$('#equationToast').className='equation-toast '+kind;clearTimeout(feedback.t);feedback.t=setTimeout(()=>$('#equationToast').textContent='',1500);}
+function showEquation(t){feedback(t+' ✓','good');}
+function showBonus(n){const e=$('#bonusToast');e.textContent=(n===8?'⚡ LIGHTNING':n===5?'⚡ QUICK':'FAST')+` +${n}`;e.classList.add('bonus-pop');setTimeout(()=>{e.textContent='';e.classList.remove('bonus-pop');},900);}
+function beep(freq,dur){if(!state.sound)return;try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=freq;g.gain.value=.035;o.connect(g);g.connect(a.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);o.stop(a.currentTime+dur);}catch{}}
+function toggleFullscreen(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();}
 
-function save(){
- if(!state.stageActive)return;
- localStorage.setItem(SAVE,JSON.stringify({op:state.op,difficulty:state.difficulty,stage:state.stage,rows:state.rows,cols:state.cols,board:state.board,found:state.found,baseScore:state.baseScore,penalty:state.penalty,freeUndos:state.freeUndos,history:state.history,secondsLeft:state.secondsLeft,runningScore:state.runningScore,page:state.page,quickBonusPool:state.quickBonusPool}));
- $("#resumeBtn").hidden=false;
-}
-function clearSave(){localStorage.removeItem(SAVE);$("#resumeBtn").hidden=true}
-function restore(){
- const raw=localStorage.getItem(SAVE);if(!raw)return;Object.assign(state,JSON.parse(raw));
- state.selected=[];state.hintCells=[];state.paused=false;state.stageActive=true;state.inputEnabled=true;state.pointerDown=false;state.lastSolveAt=performance.now();
- show("game");renderAll();startTimer();
-}
+const tutorialBase=[4,3,7,9,5, 11,6,12,8,4, 5,10,15,7,14, 3,6,9,2,8, 8,4,12,16,20].map((value,id)=>({id,value,blank:false}));let tutorialTimers=[];
+const demos=[{cells:[0,1,2],text:'4 + 3 = 7',label:'Across: three touching tiles.'},{cells:[4,9,14],values:[5,4,9],text:'5 + 4 = 9',label:'Up or down: three touching tiles.'}];
+function validateTutorialMove(board,cells,stage=1,mode='add'){const result=C.validateMove({board,rows:5,cols:5,cells,stage,mode});if(!result)throw new Error('Tutorial move failed shared validator');return result;}
+function buildTutorial(board=tutorialBase){const b=$('#tutorialBoard');b.innerHTML='';board.forEach((x,i)=>{const d=document.createElement('div');d.className='tcell'+(x.blank?' cleared':'');d.dataset.i=i;d.textContent=x.blank?'':x.value;b.appendChild(d);});}
+function mark(cells,cls,on=true){cells.forEach(i=>$(`#tutorialBoard .tcell[data-i="${i}"]`)?.classList.toggle(cls,on));}
+function runTutorial(){tutorialTimers.forEach(clearTimeout);tutorialTimers=[];const board=tutorialBase.map(x=>({...x}));validateTutorialMove(board,[0,1,2]);const vertical=board.map(x=>({...x}));[5,4,9].forEach((v,k)=>vertical[[4,9,14][k]].value=v);validateTutorialMove(vertical,[4,9,14]);buildTutorial(board);$('#tutorialReady').hidden=true;let at=500;const schedule=(fn,t)=>tutorialTimers.push(setTimeout(fn,t));
+ demos.forEach((d,n)=>{schedule(()=>{if(d.values)d.cells.forEach((i,k)=>{board[i].value=d.values[k];$(`#tutorialBoard .tcell[data-i="${i}"]`).textContent=d.values[k];});$('#tutorialStep').textContent=d.label;$('#tutorialRule').textContent='Numbers light up one at a time.';mark(d.cells,'demo');},at);d.cells.forEach((cell,k)=>schedule(()=>mark([cell],'pulse'),at+700+k*600));schedule(()=>$('#tutorialEquation').textContent=d.text+' ✓',at+2700);schedule(()=>{d.cells.forEach(i=>board[i].blank=true);buildTutorial(board);$('#tutorialEquation').textContent='';},at+3900);at+=4700;});
+ schedule(()=>{board[20].value=8;board[22].value=4;board[24].value=12;board[21].blank=board[23].blank=true;validateTutorialMove(board,[20,22,24]);buildTutorial(board);$('#tutorialStep').textContent='Cleared white spaces are okay.';$('#tutorialRule').textContent='8 → 4 → 12 is legal because only cleared spaces are between them.';mark([20,22,24],'demo');},at);schedule(()=>$('#tutorialEquation').textContent='8 + 4 = 12 ✓',at+2800);schedule(()=>{board[6].value=2;board[7].value=99;board[8].value=7;if(C.validateMove({board,rows:5,cols:5,cells:[6,8,9],stage:9,mode:'add'}))throw new Error('Tutorial illegal move was accepted');buildTutorial(board);mark([6,8],'illegal');$('#tutorialStep').textContent='Never skip an active number.';$('#tutorialEquation').textContent='2 → 7  ✕';$('#tutorialRule').textContent='The uncleared 99 blocks the path.';},at+4700);schedule(()=>{$('#tutorialReady').hidden=false;$('#tutorialStep').textContent='That’s it!';$('#tutorialEquation').textContent='';$('#tutorialRule').textContent='Find equations. Clear tiles. Score points.';},at+7800);}
+let tutorialDestination='home';
+function openTutorial(destination='home'){tutorialDestination=destination;show('tutorial');runTutorial();}
+function tutorialDone(){tutorialTimers.forEach(clearTimeout);localStorage.setItem(SEEN,'1');show(tutorialDestination);}
+function maybeUnlockDemo(){if(state.stage!==3&&state.stage!==5)return;state.paused=true;const diagonal=state.stage===3,demo=Array.from({length:25},(_,id)=>({id,value:0,blank:false}));let cells,mode;if(diagonal){demo[0].value=4;demo[6].value=3;demo[12].value=7;cells=[0,6,12];mode='add';}else{demo[0].value=7;demo[1].value=3;demo[2].value=10;cells=[2,1,0];mode='sub';}if(!C.validateMove({board:demo,rows:5,cols:5,cells,stage:state.stage,mode}))throw new Error('Unlock demo failed shared validator');$('#unlockTitle').textContent=diagonal?'DIAGONAL UNLOCKED!':'REVERSE UNLOCKED!';$('#unlockCopy').textContent=diagonal?'Equations can now run corner to corner.':'The same equation may now be traced in the opposite direction.';$('#unlockBoard').textContent=diagonal?'4  ↘  3  ↘  7':'10  ←  3  ←  7';$('#unlockOverlay').hidden=false;}
 
-/* robust delegated input; survives every board/page rebuild */
-$("#board").addEventListener("pointerdown",e=>{
- if(!state.stageActive||state.paused||!state.inputEnabled)return;
- const cell=e.target.closest(".cell");if(!cell||cell.classList.contains("blank"))return;
- e.preventDefault();state.pointerDown=true;selectTile(Number(cell.dataset.i));
-});
-$("#board").addEventListener("pointermove",e=>{
- if(!state.pointerDown||!state.stageActive||state.paused||!state.inputEnabled)return;
- const el=document.elementFromPoint(e.clientX,e.clientY),cell=el&&el.closest?el.closest(".cell"):null;
- if(!cell||cell.classList.contains("blank"))return;
- const i=Number(cell.dataset.i);if(state.selected[state.selected.length-1]!==i)selectTile(i);
-});
-function endPointer(){state.pointerDown=false}
-window.addEventListener("pointerup",endPointer);window.addEventListener("pointercancel",endPointer);window.addEventListener("blur",endPointer);
-
-
-const TUTORIAL_KEY="equate-tutorial-seen-v1";
-let tutorialTimers=[];
-
-const tutorialValues=[
-  4,3,7,12,5,
-  9,2,11,8,6,
-  5,10,15,7,14,
-  3,6,9,4,2,
-  8,4,12,16,8
-];
-const tutorialExamples=[
-  {cells:[0,1,2],eq:"4 + 3 = 7",rule:"Three numbers in one straight line can make an equation."},
-  {cells:[4,9,14],eq:"5 + 6 = 11",values:[5,6,11],rule:"Equations can run vertically too."},
-  {cells:[20,22,24],eq:"8 + 4 = 12",values:[8,4,12],rule:"Cleared white spaces do not block a later straight-line equation."}
-];
-
-function clearTutorialTimers(){tutorialTimers.forEach(clearTimeout);tutorialTimers=[]}
-function buildTutorialBoard(){
- const b=$("#tutorialBoard");b.innerHTML="";
- tutorialValues.forEach((v,i)=>{const d=document.createElement("div");d.className="tcell";d.dataset.i=i;d.textContent=v;b.appendChild(d)});
-}
-function tutorialCells(cells,cls,on=true){cells.forEach(i=>{const e=$(`#tutorialBoard .tcell[data-i="${i}"]`);if(e)e.classList.toggle(cls,on)})}
-function setTutorialValues(ex){
- if(!ex.values)return;
- ex.cells.forEach((i,k)=>{const e=$(`#tutorialBoard .tcell[data-i="${i}"]`);if(e)e.textContent=ex.values[k]});
-}
-function runTutorial(){
- clearTutorialTimers();buildTutorialBoard();
- $("#tutorialReady").hidden=true;$("#tutorialEquation").textContent="";
- $("#tutorialStep").textContent="Watch the highlighted numbers.";
- $("#tutorialRule").textContent="Pick 3 numbers in one straight line that make a true equation.";
- let offset=350;
- tutorialExamples.forEach((ex,n)=>{
-   tutorialTimers.push(setTimeout(()=>{
-     setTutorialValues(ex);
-     $("#tutorialStep").textContent=`Example ${n+1} of 3`;
-     $("#tutorialRule").textContent=ex.rule;
-     tutorialCells(ex.cells,"demo",true);
-   },offset));
-   tutorialTimers.push(setTimeout(()=>{
-     $("#tutorialEquation").textContent=ex.eq+" ✓";
-   },offset+700));
-   tutorialTimers.push(setTimeout(()=>{
-     tutorialCells(ex.cells,"demo",false);
-     tutorialCells(ex.cells,"cleared",true);
-   },offset+1500));
-   offset+=2300;
- });
- tutorialTimers.push(setTimeout(()=>{
-   $("#tutorialStep").textContent="That's it.";
-   $("#tutorialEquation").textContent="";
-   $("#tutorialRule").textContent="Find equations. Clear tiles. Score points.";
-   $("#tutorialReady").hidden=false;
- },offset+150));
-}
-function openTutorial(){
- show("tutorial");runTutorial();
-}
-function beginAfterTutorial(){
- clearTutorialTimers();
- localStorage.setItem(TUTORIAL_KEY,"1");
- show("setup");
-}
-
-$("#startBtn").onclick=()=>localStorage.getItem(TUTORIAL_KEY)?show("setup"):openTutorial();
-$$("[data-back]").forEach(b=>b.onclick=()=>show(b.dataset.back));
-$("#operationChoices").onclick=e=>{const b=e.target.closest("[data-op]");if(!b)return;state.op=b.dataset.op;$$("#operationChoices .choice").forEach(x=>x.classList.toggle("selected",x===b));$("#playBtn").disabled=!(state.op&&state.difficulty)};
-$("#difficultyChoices").onclick=e=>{const b=e.target.closest("[data-diff]");if(!b)return;state.difficulty=b.dataset.diff;$$("#difficultyChoices .choice").forEach(x=>x.classList.toggle("selected",x===b));$("#playBtn").disabled=!(state.op&&state.difficulty)};
-$("#playBtn").onclick=()=>{state.stage=DIFF[state.difficulty].base;state.runningScore=0;startStage()};
-$("#hintBtn").onclick=hint;$("#undoBtn").onclick=undo;$("#pauseBtn").onclick=pause;$("#resumeGameBtn").onclick=resume;
-$("#quitSaveBtn").onclick=()=>{
-  if(!state.stageActive)return;
-  state.paused=true;
-  state.pointerDown=false;
-  $("#quitSaveOverlay").hidden=false;
-};
-$("#cancelQuitBtn").onclick=()=>{
-  state.paused=false;
-  state.inputEnabled=true;
-  $("#quitSaveOverlay").hidden=true;
-};
-$("#saveQuitBtn").onclick=()=>{
-  save();
-  clearInterval(state.timerId);
-  state.pointerDown=false;
-  state.stageActive=false;
-  state.paused=false;
-  $("#quitSaveOverlay").hidden=true;
-  show("home");
-};
-$("#quitNoSaveBtn").onclick=()=>{
-  if(!confirm("Quit this game without saving?"))return;
-  clearSave();
-  clearInterval(state.timerId);
-  state.pointerDown=false;
-  state.stageActive=false;
-  state.paused=false;
-  $("#quitSaveOverlay").hidden=true;
-  show("home");
-};
-$("#replayBtn").onclick=()=>startStage();
-$("#nextBtn").onclick=()=>{state.stage++;startStage()};
-$("#fullscreenBtn").onclick=toggleFullscreen;
-$("#soundBtn").onclick=()=>{
-  state.sound=!state.sound;
-  const icon=$("#soundBtn .control-icon");
-  if(icon)icon.textContent=state.sound?"🔊":"🔇";
-};
-$("#resumeBtn").onclick=restore;
-$("#howToBtn").onclick=openTutorial;
-$("#skipTutorialBtn").onclick=beginAfterTutorial;
-$("#tutorialPlayBtn").onclick=beginAfterTutorial;
-$("#replayTutorialBtn").onclick=runTutorial;
-window.addEventListener("resize",()=>requestAnimationFrame(fitBoard));window.addEventListener("orientationchange",()=>setTimeout(fitBoard,120));
-document.addEventListener("visibilitychange",()=>{if(document.hidden&&state.stageActive&&!state.paused)pause()});
-$("#resumeBtn").hidden=!localStorage.getItem(SAVE);
+$('#board').addEventListener('pointerdown',e=>{const x=e.target.closest('.cell');if(!x||x.classList.contains('blank'))return;e.preventDefault();state.pointerDown=true;selectTile(Number(x.dataset.i));});$('#board').addEventListener('pointermove',e=>{if(!state.pointerDown)return;const x=document.elementFromPoint(e.clientX,e.clientY)?.closest('.cell');if(x&&!x.classList.contains('blank')){const i=Number(x.dataset.i);if(state.selected.at(-1)!==i)selectTile(i);}});window.addEventListener('pointerup',()=>state.pointerDown=false);window.addEventListener('pointercancel',()=>state.pointerDown=false);window.addEventListener('blur',()=>state.pointerDown=false);
+function chooseMode(mode){state.mode=mode;$('#setupTitle').textContent=mode==='two'?'2 Player Head-to-Head':'Solo Game';$('#playerNames').hidden=mode!=='two';show('setup');}
+$('#soloBtn').onclick=()=>{chooseMode('solo');if(!localStorage.getItem(SEEN))openTutorial('setup');};$('#twoBtn').onclick=()=>chooseMode('two');$$('[data-back]').forEach(b=>b.onclick=()=>show(b.dataset.back));$('#operationChoices').onclick=e=>{const b=e.target.closest('[data-op]');if(!b)return;state.op=b.dataset.op;$$('#operationChoices .choice').forEach(x=>x.classList.toggle('selected',x===b));$('#playBtn').disabled=!(state.op&&state.difficulty);};$('#difficultyChoices').onclick=e=>{const b=e.target.closest('[data-diff]');if(!b)return;state.difficulty=b.dataset.diff;$$('#difficultyChoices .choice').forEach(x=>x.classList.toggle('selected',x===b));$('#playBtn').disabled=!(state.op&&state.difficulty);};
+$('#playBtn').onclick=()=>{state.stage=1;state.runningScore=0;state.playerScores=[0,0];state.turn=0;state.players=[$('#p1Name').value.trim()||'Player 1',$('#p2Name').value.trim()||'Player 2'];clearIntentionalSave();startStage();};$('#hintBtn').onclick=hint;$('#undoBtn').onclick=undo;$('#pauseBtn').onclick=pause;$('#resumeGameBtn').onclick=resumePause;$('#quitSaveBtn').onclick=()=>{state.paused=true;$('#quitSaveOverlay').hidden=false;};$('#cancelQuitBtn').onclick=()=>{state.paused=false;$('#quitSaveOverlay').hidden=true;};$('#saveQuitBtn').onclick=()=>{intentionalSave();clearInterval(state.timerId);state.stageActive=false;state.paused=false;$('#quitSaveOverlay').hidden=true;show('home');};$('#quitNoSaveBtn').onclick=()=>{clearIntentionalSave();clearInterval(state.timerId);state.stageActive=false;state.paused=false;$('#quitSaveOverlay').hidden=true;show('home');};$('#replayBtn').onclick=startStage;$('#nextBtn').onclick=()=>{state.stage++;startStage();};$('#fullscreenBtn').onclick=toggleFullscreen;$('#soundBtn').onclick=()=>{state.sound=!state.sound;$('#soundBtn .control-icon').textContent=state.sound?'🔊':'🔇';};$('#resumeBtn').onclick=restore;$('#howToBtn').onclick=()=>openTutorial('home');$('#skipTutorialBtn').onclick=tutorialDone;$('#tutorialPlayBtn').onclick=tutorialDone;$('#replayTutorialBtn').onclick=runTutorial;$('#unlockContinue').onclick=()=>{state.paused=false;$('#unlockOverlay').hidden=true;};window.addEventListener('resize',()=>requestAnimationFrame(fitBoard));document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.stageActive&&!state.paused)pause();});$('#resumeBtn').hidden=!localStorage.getItem(SAVE);
 })();
