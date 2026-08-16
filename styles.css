@@ -23,6 +23,7 @@ button{font:inherit;color:inherit}
 .setup-card h2{font-size:32px}.choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}.choice small{display:block;color:#cbbbdc;margin-top:4px}.difficulties{grid-template-columns:repeat(4,1fr)}
 .choice.selected{outline:3px solid #bd5cff;background:#351655}.play-btn{width:100%}.play-btn:disabled{opacity:.4}
 .player-names{display:grid;grid-template-columns:1fr 1fr;gap:12px}.player-names label{font-size:12px;font-weight:900;color:#cab7df}.player-names input{display:block;width:100%;margin-top:5px;border:1px solid #7542a4;border-radius:10px;background:#090610;color:white;padding:11px;font:inherit}
+.player-names label[hidden]{display:none}.leaderboard{max-width:560px;margin:22px auto 0;padding:14px 18px;border:1px solid #543174;border-radius:14px;background:#090610}.leaderboard h3{text-align:center;margin:0 0 9px;color:#ffd43d;font-size:13px;letter-spacing:.08em}.leaderboard #leaderboardList>div{display:flex;justify-content:space-between;gap:18px;padding:5px 2px;border-bottom:1px solid #281a38}.leaderboard #leaderboardList>div:last-child{border-bottom:0}.leaderboard strong{color:#63ef37}
 
 .game-screen{padding:0;overflow:hidden}
 .game-layout{

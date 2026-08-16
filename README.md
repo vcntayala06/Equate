@@ -1,8 +1,8 @@
-# Equate — Accuracy-Audited Build 9
+# EQ8 — Accuracy-Audited Build 10
 
 Open `index.html` in a modern browser. No installation or network connection is required.
 
-This build includes Solo and local 2 Player head-to-head play, exact 5×5/6×6/7×7/9×9 difficulty boards, progressive diagonal and reverse unlocks, intentional Save & Quit, a validator-driven animated tutorial, and two free hints per stage followed by a five-point charge (never below zero).
+This build includes named 1 Player and local 2 Player play, persistent per-player high scores, a five-minute round timer, exact 5×5/6×6/7×7/9×9 difficulty boards, progressive diagonal and reverse unlocks, intentional Save & Quit, a validator-driven animated tutorial, and two free hints per stage followed by a five-point charge (never below zero).
 
 ## Accuracy audit
 
